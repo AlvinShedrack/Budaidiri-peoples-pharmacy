@@ -292,6 +292,7 @@ async function renderInventory() {
         <td><span class="badge ${stockBadge}">${Number(med.quantity || 0)}</span></td>
         <td>${formatMoney(med.buyingPrice)}</td>
         <td>${formatMoney(med.sellingPrice)}</td>
+        <td>${formatMoney(med.wholesalePrice)}</td>
         <td><span class="badge ${expiryBadge}">${escapeHtml(med.expiryDate)}</span></td>
         <td>
           ${canEdit ? `<button class="table-btn" data-action="edit-medicine" data-id="${med.id}">Edit</button>` : ""}
@@ -314,7 +315,7 @@ async function populateMedicineOptions() {
   const saleOptions = medicines
     .filter(med => Number(med.quantity) > 0 && daysUntil(med.expiryDate) >= 0)
     .sort((a, b) => a.name.localeCompare(b.name))
-    .map(med => `<option value="${med.id}">${escapeHtml(med.name)} | Qty ${med.quantity} | ${formatMoney(med.sellingPrice)}</option>`).join("");
+    .map(med => `<option value="${med.id}">${escapeHtml(med.name)} | Qty ${med.quantity} | ${formatMoney(med.sellingPrice)}${med.wholesalePrice ? ` | Wholesale ${formatMoney(med.wholesalePrice)}` : ""}</option>`).join("");
 
   const purchaseOptions = medicines
     .sort((a, b) => a.name.localeCompare(b.name))
@@ -343,6 +344,7 @@ async function openMedicineForm(id = null) {
     $("quantity").value = med.quantity || 0;
     $("buyingPrice").value = med.buyingPrice || 0;
     $("sellingPrice").value = med.sellingPrice || 0;
+    $("wholesalePrice").value = med.wholesalePrice || 0;
     $("reorderLevel").value = med.reorderLevel || 5;
     $("expiryDate").value = med.expiryDate || "";
     $("medicineNotes").value = med.notes || "";
@@ -373,6 +375,7 @@ async function saveMedicine(event) {
     quantity: Number($("quantity").value || 0),
     buyingPrice: Number($("buyingPrice").value || 0),
     sellingPrice: Number($("sellingPrice").value || 0),
+    wholesalePrice: Number($("wholesalePrice").value || 0),
     reorderLevel: Number($("reorderLevel").value || 5),
     expiryDate: $("expiryDate").value,
     notes: $("medicineNotes").value.trim(),
@@ -498,14 +501,21 @@ async function addToCart() {
   const existingQty = cart.filter(item => item.medicineId === medicineId).reduce((sum, item) => sum + item.qty, 0);
   if (existingQty + qty > Number(med.quantity)) return showToast("Insufficient stock.");
 
+  const saleType = $("saleType")?.value || "retail";
+  let effectivePrice = Number(med.sellingPrice || 0);
+  if (saleType === "wholesale") {
+    effectivePrice = med.wholesalePrice ? Number(med.wholesalePrice) : Math.round(effectivePrice * 0.9);
+  }
+
   cart.push({
     medicineId,
     name: med.name,
     batchNo: med.batchNo,
     qty,
-    sellingPrice: Number(med.sellingPrice || 0),
+    sellingPrice: effectivePrice,
     buyingPrice: Number(med.buyingPrice || 0),
-    discount: Math.max(0, discount)
+    discount: Math.max(0, discount),
+    saleType
   });
 
   $("saleQty").value = 1;
@@ -565,10 +575,12 @@ async function completeSale() {
     await putRecord(STORE.medicines, med);
   }
 
+  const saleType = $("saleType")?.value || "retail";
   const sale = {
     receiptNo: `RX-${Date.now()}`,
     customerName: $("saleCustomer").value.trim() || "Walk-in customer",
     paymentMethod: $("salePaymentMethod").value,
+    saleType,
     cashierId: currentUser.id,
     cashierName: currentUser.name,
     subtotal,
@@ -599,6 +611,8 @@ function showReceipt(sale) {
     <p>${new Date(sale.createdAt).toLocaleString()}</p>
     <p>Customer: ${escapeHtml(sale.customerName)}</p>
     <p>Cashier: ${escapeHtml(sale.cashierName)}</p>
+    <p>Payment: ${escapeHtml(sale.paymentMethod)}</p>
+    <p>Sale type: <strong>${escapeHtml(sale.saleType || "retail").toUpperCase()}</strong></p>
     <table>
       <thead><tr><th>Item</th><th>Qty</th><th>Total</th></tr></thead>
       <tbody>
@@ -746,7 +760,7 @@ async function renderReports() {
 
 async function exportSalesCsv() {
   const sales = await getAll(STORE.sales);
-  const rows = [["Receipt", "Customer", "Payment", "Subtotal", "Discount", "Total", "Profit", "Cashier", "Date"]];
+  const rows = [["Receipt", "Customer", "Payment", "Subtotal", "Discount", "Total", "Profit", "Cashier", "Sale Type", "Date"]];
   sales.forEach(sale => {
     rows.push([
       sale.receiptNo,
@@ -757,10 +771,29 @@ async function exportSalesCsv() {
       sale.total,
       sale.profit,
       sale.cashierName,
+      sale.saleType || "retail",
       sale.createdAt
     ]);
   });
   downloadFile(`my-rx-sales-${todayISO()}.csv`, rows.map(row => row.map(cell => `"${String(cell ?? "").replaceAll('"', '""')}"`).join(",")).join("\n"), "text/csv");
+}
+
+async function exportPurchasesCsv() {
+  const purchases = await getAll(STORE.purchases);
+  const suppliers = await getAll(STORE.suppliers);
+  const rows = [["Invoice", "Supplier", "Total Cost", "Created By", "Created By Name", "Date"]];
+  purchases.forEach(purchase => {
+    const supplier = suppliers.find(s => Number(s.id) === Number(purchase.supplierId));
+    rows.push([
+      purchase.invoiceNo,
+      supplier ? supplier.name : "Unknown",
+      purchase.total,
+      purchase.createdBy,
+      purchase.createdByName,
+      purchase.createdAt
+    ]);
+  });
+  downloadFile(`my-rx-purchases-${todayISO()}.csv`, rows.map(row => row.map(cell => `"${String(cell ?? "").replaceAll('"', '""')}"`).join(",")).join("\n"), "text/csv");
 }
 
 async function renderUsers() {
@@ -857,6 +890,50 @@ function downloadFile(filename, content, type = "application/json") {
   URL.revokeObjectURL(link.href);
 }
 
+async function saveElementAsPdf(element, filename) {
+  if (!element) return;
+  const opt = {
+    margin: 0.4,
+    filename,
+    image: { type: 'jpeg', quality: 0.98 },
+    html2canvas: { scale: 2, useCORS: true },
+    jsPDF: { unit: 'in', format: 'letter', orientation: 'portrait' }
+  };
+  await html2pdf().set(opt).from(element).save();
+}
+
+async function saveReceiptAsPdf() {
+  const receiptCard = document.querySelector('#receiptModal .receipt-card');
+  const filename = `my-rx-receipt-${todayISO()}-${Date.now()}.pdf`;
+
+  if (window.electronAPI?.savePdf) {
+    document.body.classList.add('print-receipt');
+    const result = await window.electronAPI.savePdf(filename);
+    document.body.classList.remove('print-receipt');
+    if (!result?.canceled) showToast('Receipt saved as PDF.');
+    return;
+  }
+
+  await saveElementAsPdf(receiptCard, filename);
+}
+
+async function saveCurrentPageAsPdf() {
+  const activePage = document.querySelector('.page.active');
+  if (!activePage) return;
+  const pageId = activePage.id || 'page';
+  const filename = `my-rx-${pageId}-${todayISO()}.pdf`;
+
+  if (window.electronAPI?.savePdf) {
+    document.body.classList.add('print-active-page');
+    const result = await window.electronAPI.savePdf(filename);
+    document.body.classList.remove('print-active-page');
+    if (!result?.canceled) showToast('Page saved as PDF.');
+    return;
+  }
+
+  await saveElementAsPdf(activePage, filename);
+}
+
 async function exportBackup() {
   const backup = await exportAllData();
   downloadFile(`my-rx-backup-${todayISO()}.json`, JSON.stringify(backup, null, 2));
@@ -924,6 +1001,9 @@ function bindEvents() {
   $("completeSaleBtn").addEventListener("click", completeSale);
   $("clearCartBtn").addEventListener("click", () => { cart = []; renderCart(); });
   $("printReceiptBtn").addEventListener("click", () => window.print());
+  $("saveReceiptPdfBtn").addEventListener("click", saveReceiptAsPdf);
+  $("printPageBtn").addEventListener("click", () => window.print());
+  $("savePagePdfBtn").addEventListener("click", saveCurrentPageAsPdf);
 
   $("addPurchaseLineBtn").addEventListener("click", addPurchaseLine);
   $("completePurchaseBtn").addEventListener("click", completePurchase);
@@ -932,6 +1012,7 @@ function bindEvents() {
   $("refreshReportsBtn").addEventListener("click", renderReports);
   $("reportDate").addEventListener("change", renderReports);
   $("exportSalesCsvBtn").addEventListener("click", exportSalesCsv);
+  $("exportPurchasesCsvBtn").addEventListener("click", exportPurchasesCsv);
 
   $("addUserBtn").addEventListener("click", () => openUserForm());
   $("userForm").addEventListener("submit", saveUser);

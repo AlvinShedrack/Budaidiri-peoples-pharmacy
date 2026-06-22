@@ -689,9 +689,19 @@ tr:last-child td {
   body * {
     visibility: hidden;
   }
-  #receiptModal,
-  #receiptModal * {
+  body.print-receipt #receiptModal,
+  body.print-receipt #receiptModal * {
     visibility: visible;
+  }
+  body.print-active-page .page.active,
+  body.print-active-page .page.active * {
+    visibility: visible;
+  }
+  #receiptModal.hidden {
+    display: none !important;
+  }
+  .no-print {
+    display: none !important;
   }
   #receiptModal {
     position: absolute;
@@ -705,8 +715,5 @@ tr:last-child td {
     border-radius: 0;
     max-height: none;
     width: 100%;
-  }
-  .no-print {
-    display: none !important;
   }
 }
