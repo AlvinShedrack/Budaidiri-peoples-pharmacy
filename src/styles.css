@@ -775,3 +775,175 @@ tr:last-child td {
     border-top: 2px solid #0f172a;
   }
 }
+/* =========================================================
+   FIX: Mobile table horizontal scroll + print layout
+   Paste this at the very bottom of src/styles.css
+========================================================= */
+
+.page,
+.main-content,
+.panel,
+.two-column > *,
+.sales-layout > * {
+  min-width: 0;
+}
+
+.panel {
+  min-width: 0;
+}
+
+.table-wrap {
+  display: block;
+  width: 100%;
+  max-width: 100%;
+  overflow-x: auto;
+  overflow-y: hidden;
+  -webkit-overflow-scrolling: touch;
+  border: 1px solid var(--line);
+  border-radius: 14px;
+}
+
+.table-wrap table {
+  width: 100%;
+  min-width: 760px;
+}
+
+@media (max-width: 760px) {
+  .panel {
+    overflow: hidden;
+  }
+
+  .table-wrap {
+    max-width: 100%;
+    overflow-x: auto;
+    overflow-y: hidden;
+  }
+
+  .table-wrap table {
+    min-width: 680px;
+  }
+}
+
+@media print {
+  body {
+    background: white;
+    color: #0f172a;
+  }
+
+  body * {
+    box-shadow: none !important;
+    border-radius: 0 !important;
+  }
+
+  .sidebar,
+  .topbar,
+  .nav-link,
+  .no-print,
+  button:not(.hidden),
+  [data-close],
+  .form-actions {
+    display: none !important;
+  }
+
+  .main-content {
+    margin-left: 0;
+    width: 100%;
+    padding: 0;
+  }
+
+  .page.active {
+    display: block !important;
+  }
+
+  .page:not(.active) {
+    display: none !important;
+  }
+
+  body.printing-receipt .app-shell {
+    display: none !important;
+  }
+
+  body.printing-page .modal {
+    display: none !important;
+  }
+
+  body.printing-receipt #receiptModal {
+    display: grid !important;
+  }
+
+  #receiptModal {
+    position: static;
+    inset: auto;
+    background: white;
+    padding: 20px;
+    box-shadow: none;
+    border-radius: 0;
+    margin: 0;
+    width: 100%;
+    max-width: none;
+  }
+
+  .receipt-card {
+    width: 100%;
+    max-width: none;
+    max-height: none;
+    overflow: visible;
+    box-shadow: none;
+  }
+
+  .panel,
+  .table-wrap {
+    page-break-inside: avoid;
+    box-shadow: none;
+    border: none;
+  }
+
+  .table-wrap {
+    overflow: visible !important;
+    max-width: none;
+  }
+
+  table,
+  .table-wrap table {
+    width: 100%;
+    min-width: 0;
+    border-collapse: collapse;
+    border: 1px solid #0f172a;
+    margin-bottom: 10px;
+  }
+
+  th,
+  td {
+    border: 1px solid #0f172a;
+    padding: 8px;
+    font-size: 12px;
+  }
+
+  th {
+    background: #f8fafc;
+    font-weight: bold;
+  }
+
+  .cards-grid,
+  .two-column,
+  .sales-layout,
+  .filters-row,
+  .sale-add-row {
+    display: block;
+  }
+
+  .stat-card {
+    grid-column: auto;
+    page-break-inside: avoid;
+    margin-bottom: 10px;
+  }
+
+  .receipt-content h2,
+  .receipt-content p {
+    margin: 6px 0;
+  }
+
+  .receipt-total {
+    margin-top: 16px;
+  }
+}
