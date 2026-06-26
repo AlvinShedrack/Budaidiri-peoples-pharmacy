@@ -20,9 +20,9 @@
     <p class="muted">Offline pharmacy inventory, sales, purchases, reports, and backup.</p>
       <form id="loginForm" class="login-form">
         <label>Email</label>
-        <input id="loginEmail" type="email" placeholder="admin@example.com" required />
+        <input id="loginEmail" type="email" placeholder="Your email" required />
         <label>Password</label>
-        <input id="loginPassword" type="password" placeholder="admin123" required />
+        <input id="loginPassword" type="password" placeholder="Password" required />
         <button type="submit" class="primary-btn full">Sign in</button>
       </form>
     </div>
@@ -45,12 +45,15 @@
         <button class="nav-link" data-page="reports">Reports</button>
         <button class="nav-link admin-only" data-page="users">Users</button>
         <button class="nav-link" data-page="backup">Backup</button>
-      </nav>
+      
 
-      <div class="sidebar-footer">
-        <p id="currentUserText"></p>
-        <button id="logoutBtn" class="ghost-btn full">Logout</button>
-      </div>
+        <div class="sidebar-footer">
+          <p id="currentUserText"></p>
+          <button id="logoutBtn" class="ghost-btn full">Logout</button><br>
+
+        </div>
+        <br>
+      </nav>
     </aside>
 
     <main class="main-content">
