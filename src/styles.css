@@ -2434,7 +2434,7 @@ input[placeholder="DD-MM-YYYY"] {
     display: flex !important;
     flex-direction: column !important;
     gap: 8px !important;
-    background: #ffffff !important;
+    background: #2d96b1 !important;
     padding: 0 12px !important;
     margin: 0 !important;
     max-height: 0 !important;
@@ -2487,4 +2487,19 @@ input[placeholder="DD-MM-YYYY"] {
   .logo-sidebar-card::after {
     font-size: 30px;
   }
+}
+
+.app-footer {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(245, 221, 221, 0.96);
+  color: #dc2626;
+  font-weight: 800;
+  text-align: center;
+  font-size: 0.95rem;
+  padding: 4px 10px;
+  border-top: 1px solid rgba(0, 0, 0, 0.08);
+  z-index: 999;
 }

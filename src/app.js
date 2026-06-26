@@ -188,7 +188,7 @@ async function seedInitialData() {
   if (!users.length) {
     await addRecord(STORE.users, {
       name: "System Administrator",
-      email: "admin@example.com",
+      email: "admin@jericho.com",
       passwordHash: simpleHash("admin123"),
       role: "Administrator",
       isActive: true,
@@ -197,7 +197,7 @@ async function seedInitialData() {
 
     await addRecord(STORE.users, {
       name: "Main Dispenser",
-      email: "dispenser@example.com",
+      email: "dispenser@jericho.com",
       passwordHash: simpleHash("disp123"),
       role: "Dispenser",
       isActive: true,
@@ -206,7 +206,7 @@ async function seedInitialData() {
 
     await addRecord(STORE.users, {
       name: "Director",
-      email: "director@example.com",
+      email: "director@jericho.com",
       passwordHash: simpleHash("director123"),
       role: "Director",
       isActive: true,
@@ -2432,7 +2432,10 @@ function bindEvents() {
     if (action === "delete-user") deleteUser(id);
   });
 
-  safeOn("dashMedicineSearch", "input", renderDashboardMedicineSearch);
+  const dashMedicineSearch = $("dashMedicineSearch");
+  if (dashMedicineSearch) {
+    dashMedicineSearch.addEventListener("input", renderDashboardMedicineSearch);
+  }
 
   window.addEventListener("beforeinstallprompt", event => {
     event.preventDefault();
