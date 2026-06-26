@@ -1,6 +1,6 @@
 {
-  "name": "Budadiri People's Pharmacy",
-  "short_name": "Budadiri Pharmacy",
+  "name": "Jericho Drug Shop",
+  "short_name": "Jericho Drug Shop",
   "description": "Offline pharmacy inventory, sales, purchases, reports, receipts, and backup software.",
   "start_url": "./index.html",
   "display": "standalone",
