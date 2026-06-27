@@ -13,18 +13,46 @@
 <body>
   <div id="toast" class="toast"></div>
 
-  <section id="loginScreen" class="login-screen">
-    <div class="login-card">
-    <img src="./assets/budadiri-logo.png" alt="Budadiri People's Pharmacy" class="login-logo" />
-    <h1>Budadiri People's Pharmacy</h1>
-    <p class="muted">Offline pharmacy inventory, sales, purchases, reports, and backup.</p>
-      <form id="loginForm" class="login-form">
-        <label>Email</label>
-        <input id="loginEmail" type="email" placeholder="Your email" required />
-        <label>Password</label>
-        <input id="loginPassword" type="password" placeholder="Password" required />
-        <button type="submit" class="primary-btn full">Sign in</button>
-      </form>
+  <section id="loginScreen" class="login-screen login-travel-style">
+    <div class="login-card login-travel-card">
+
+      <div class="login-left-brand">
+        <div class="login-left-pattern pattern-one"></div>
+        <div class="login-left-pattern pattern-two"></div>
+
+        <div class="login-left-logo-card">
+          <img src="./assets/budadiri-logo.png" alt="Budadiri People's Pharmacy" class="login-hero-logo" />
+        </div>
+
+        <div class="login-left-text">
+          <h2>Budadiri People's Pharmacy</h2>
+          <p>Reliable pharmacy care, inventory, sales, purchases, reports, backup, and sync.</p>
+        </div>
+      </div>
+
+      <div class="login-right-form">
+        <div class="login-welcome-icon">✈</div>
+
+        <h1>Welcome</h1>
+        <p class="muted">Login with your account</p>
+
+        <form id="loginForm" class="login-form">
+          <label>Email</label>
+          <div class="login-input-wrap">
+            <span>✉</span>
+            <input id="loginEmail" type="email" placeholder="Enter your email" required />
+          </div>
+
+          <label>Password</label>
+          <div class="login-input-wrap">
+            <span>🔒</span>
+            <input id="loginPassword" type="password" placeholder="Enter your password" required />
+          </div>
+
+          <button type="submit" class="primary-btn full login-main-btn">Login</button>
+        </form>
+      </div>
+
     </div>
   </section>
 

@@ -3140,3 +3140,3339 @@ tbody tr:hover {
     font-size: 13px !important;
   }
 }
+
+
+/* =========================================================
+   COMPLETE LAYOUT REDESIGN: PHARMACY POS V2
+   Paste at the VERY BOTTOM of src/styles.css
+   Same functionality, different interface/layout
+========================================================= */
+
+:root {
+  --bg: #eef2f6 !important;
+  --panel: #ffffff !important;
+  --text: #172033 !important;
+  --muted: #7a8496 !important;
+  --line: #d7dee8 !important;
+
+  --primary: #263f8f !important;
+  --primary-dark: #172a66 !important;
+  --primary-soft: #edf2ff !important;
+
+  --success: #0f8a5f !important;
+  --warning: #d97706 !important;
+  --danger: #c02626 !important;
+
+  --radius: 22px !important;
+  --shadow: 0 24px 55px rgba(23, 32, 51, 0.11) !important;
+}
+
+/* Whole app background */
+body {
+  margin: 0 !important;
+  background:
+    linear-gradient(135deg, #edf2f7 0%, #f8fafc 45%, #e8efff 100%) !important;
+  color: var(--text) !important;
+  font-family: "Inter", "Segoe UI", Arial, sans-serif !important;
+}
+
+/* =========================================================
+   LOGIN PAGE: SPLIT MODERN LAYOUT
+========================================================= */
+
+.login-screen {
+  min-height: 100vh !important;
+  display: grid !important;
+  place-items: center !important;
+  padding: 34px !important;
+  background:
+    radial-gradient(circle at 15% 20%, rgba(38, 63, 143, 0.38), transparent 28%),
+    radial-gradient(circle at 85% 85%, rgba(15, 138, 95, 0.28), transparent 28%),
+    linear-gradient(135deg, #111827 0%, #172a66 48%, #0f172a 100%) !important;
+}
+
+.login-card {
+  width: min(980px, 100%) !important;
+  min-height: 560px !important;
+  display: grid !important;
+  grid-template-columns: 1.05fr 0.95fr !important;
+  gap: 0 !important;
+  padding: 0 !important;
+  overflow: hidden !important;
+  border-radius: 34px !important;
+  background: #ffffff !important;
+  border: 1px solid rgba(255, 255, 255, 0.45) !important;
+  box-shadow: 0 35px 95px rgba(0, 0, 0, 0.35) !important;
+  text-align: left !important;
+  position: relative !important;
+}
+
+.login-card::before {
+  content: "PHARMACY POS";
+  display: flex !important;
+  align-items: flex-end !important;
+  justify-content: flex-start !important;
+  padding: 42px !important;
+  color: #ffffff !important;
+  font-size: 42px !important;
+  font-weight: 950 !important;
+  letter-spacing: -0.06em !important;
+  line-height: 1 !important;
+  background:
+    linear-gradient(rgba(23, 42, 102, 0.45), rgba(15, 23, 42, 0.85)),
+    radial-gradient(circle at 30% 20%, rgba(96, 165, 250, 0.50), transparent 26%),
+    linear-gradient(135deg, #172a66, #263f8f 48%, #0f8a5f) !important;
+}
+
+.login-card > * {
+  grid-column: 2 !important;
+  padding-left: 38px !important;
+  padding-right: 38px !important;
+}
+
+.login-logo {
+  width: 110px !important;
+  margin: 44px 0 16px !important;
+  background: #f8fafc !important;
+  border: 1px solid #e5e7eb !important;
+  border-radius: 24px !important;
+  padding: 8px !important;
+  box-shadow: 0 12px 24px rgba(23, 32, 51, 0.08) !important;
+}
+
+.login-card h1 {
+  margin: 0 0 8px !important;
+  color: #172033 !important;
+  font-size: 32px !important;
+  font-weight: 950 !important;
+  letter-spacing: -0.05em !important;
+}
+
+.login-card p {
+  color: #7a8496 !important;
+  margin-bottom: 10px !important;
+}
+
+.login-form {
+  margin-top: 26px !important;
+  display: grid !important;
+  gap: 15px !important;
+}
+
+.login-form label {
+  font-size: 12px !important;
+  text-transform: uppercase !important;
+  letter-spacing: 0.06em !important;
+}
+
+.login-form input {
+  height: 54px !important;
+  border-radius: 18px !important;
+  background: #f8fafc !important;
+  border: 1px solid #dbe3ef !important;
+}
+
+.login-form .primary-btn {
+  height: 56px !important;
+  margin-top: 8px !important;
+  border-radius: 18px !important;
+  font-size: 15px !important;
+}
+
+/* =========================================================
+   DESKTOP APP LAYOUT: FLOATING LEFT RAIL
+========================================================= */
+
+.app-shell:not(.hidden) {
+  display: block !important;
+  min-height: 100vh !important;
+  padding: 22px 22px 22px 132px !important;
+  background:
+    radial-gradient(circle at top right, rgba(38, 63, 143, 0.10), transparent 32%),
+    #eef2f6 !important;
+}
+
+.sidebar {
+  position: fixed !important;
+  top: 22px !important;
+  left: 22px !important;
+  bottom: 22px !important;
+  width: 88px !important;
+  height: auto !important;
+  padding: 14px 10px !important;
+  border-radius: 32px !important;
+  background: #172033 !important;
+  border: 1px solid rgba(255, 255, 255, 0.10) !important;
+  box-shadow: 0 26px 65px rgba(23, 32, 51, 0.32) !important;
+  overflow-y: auto !important;
+  overflow-x: hidden !important;
+  color: #ffffff !important;
+  z-index: 30 !important;
+}
+
+/* Logo becomes compact */
+.logo-sidebar-card {
+  width: 68px !important;
+  min-height: 74px !important;
+  margin: 0 auto 18px !important;
+  padding: 8px !important;
+  border-radius: 24px !important;
+  background: #ffffff !important;
+  border: none !important;
+  box-shadow: none !important;
+  display: grid !important;
+  place-items: center !important;
+  text-align: center !important;
+}
+
+.sidebar-logo {
+  width: 48px !important;
+  max-width: 48px !important;
+  height: 48px !important;
+  object-fit: contain !important;
+  margin: 0 !important;
+}
+
+.logo-sidebar-card strong,
+.logo-sidebar-card span {
+  display: none !important;
+}
+
+/* Side nav becomes icon tiles */
+.sidebar nav {
+  display: grid !important;
+  gap: 10px !important;
+  padding: 0 !important;
+  margin: 0 !important;
+  background: transparent !important;
+  max-height: none !important;
+  opacity: 1 !important;
+  overflow: visible !important;
+  pointer-events: auto !important;
+}
+
+.nav-link {
+  width: 68px !important;
+  height: 68px !important;
+  padding: 7px !important;
+  margin: 0 auto !important;
+  border-radius: 24px !important;
+  display: grid !important;
+  place-items: center !important;
+  text-align: center !important;
+  color: #cbd5e1 !important;
+  background: rgba(255, 255, 255, 0.06) !important;
+  border: 1px solid rgba(255, 255, 255, 0.08) !important;
+  font-size: 10px !important;
+  line-height: 1.05 !important;
+  font-weight: 800 !important;
+  white-space: normal !important;
+  overflow: hidden !important;
+}
+
+.nav-link::before {
+  width: 27px !important;
+  height: 27px !important;
+  min-width: 27px !important;
+  font-size: 16px !important;
+  border-radius: 12px !important;
+  margin-bottom: 4px !important;
+  display: grid !important;
+  place-items: center !important;
+  box-shadow: none !important;
+}
+
+.nav-link:hover {
+  transform: scale(1.04) !important;
+  background: rgba(255, 255, 255, 0.13) !important;
+  color: #ffffff !important;
+}
+
+.nav-link.active {
+  background: linear-gradient(135deg, #ffffff, #edf2ff) !important;
+  color: #172033 !important;
+  border-color: transparent !important;
+  box-shadow: 0 12px 28px rgba(255, 255, 255, 0.16) !important;
+}
+
+.nav-link.active::after {
+  display: none !important;
+}
+
+/* User card in rail */
+.mobile-user-card {
+  width: 68px !important;
+  margin: 12px auto 0 !important;
+  padding: 8px !important;
+  border-radius: 22px !important;
+  background: rgba(255, 255, 255, 0.08) !important;
+  border: 1px solid rgba(255, 255, 255, 0.08) !important;
+  display: grid !important;
+  gap: 8px !important;
+}
+
+.mobile-user-card p {
+  font-size: 9px !important;
+  line-height: 1.15 !important;
+  color: #e5e7eb !important;
+  text-align: center !important;
+  margin: 0 !important;
+}
+
+.mobile-user-card .ghost-btn {
+  width: 100% !important;
+  min-width: 0 !important;
+  padding: 7px 4px !important;
+  font-size: 9px !important;
+  border-radius: 12px !important;
+}
+
+/* Main content now fills beside rail */
+.main-content {
+  width: 100% !important;
+  margin-left: 0 !important;
+  padding: 0 !important;
+}
+
+/* =========================================================
+   TOPBAR: COMMAND HEADER
+========================================================= */
+
+.topbar {
+  position: sticky !important;
+  top: 16px !important;
+  z-index: 20 !important;
+  margin: 0 0 22px !important;
+  padding: 14px 16px !important;
+  min-height: 86px !important;
+  border-radius: 30px !important;
+  background: rgba(255, 255, 255, 0.88) !important;
+  backdrop-filter: blur(16px) !important;
+  border: 1px solid rgba(215, 222, 232, 0.95) !important;
+  box-shadow: 0 18px 42px rgba(23, 32, 51, 0.08) !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: space-between !important;
+}
+
+.topbar-brand {
+  display: flex !important;
+  align-items: center !important;
+  gap: 14px !important;
+}
+
+.topbar-logo {
+  width: 58px !important;
+  height: 58px !important;
+  border-radius: 20px !important;
+  background: #f8fafc !important;
+  border: 1px solid #dbe3ef !important;
+  padding: 6px !important;
+}
+
+.topbar h1 {
+  font-size: 26px !important;
+  line-height: 1.05 !important;
+  color: #172033 !important;
+  font-weight: 950 !important;
+  letter-spacing: -0.05em !important;
+}
+
+.topbar p {
+  margin-top: 4px !important;
+  font-size: 13px !important;
+  color: #7a8496 !important;
+}
+
+.top-actions {
+  display: flex !important;
+  align-items: center !important;
+  gap: 9px !important;
+}
+
+/* =========================================================
+   DASHBOARD: DIFFERENT TILE LAYOUT
+========================================================= */
+
+.cards-grid {
+  display: grid !important;
+  grid-template-columns: repeat(12, minmax(0, 1fr)) !important;
+  gap: 16px !important;
+  margin-bottom: 20px !important;
+}
+
+.stat-card {
+  grid-column: span 3 !important;
+  min-height: 150px !important;
+  border-radius: 30px !important;
+  padding: 20px !important;
+  border: none !important;
+  box-shadow: 0 18px 44px rgba(23, 32, 51, 0.09) !important;
+  background:
+    linear-gradient(135deg, #ffffff 0%, #f8fafc 100%) !important;
+  position: relative !important;
+  overflow: hidden !important;
+}
+
+.stat-card:nth-child(1) {
+  grid-column: span 4 !important;
+  background: linear-gradient(135deg, #172033, #263f8f) !important;
+  color: #ffffff !important;
+}
+
+.stat-card:nth-child(1) span,
+.stat-card:nth-child(1) strong {
+  color: #ffffff !important;
+}
+
+.stat-card:nth-child(2) {
+  grid-column: span 4 !important;
+}
+
+.stat-card:nth-child(3) {
+  grid-column: span 4 !important;
+}
+
+.stat-card::before {
+  content: "" !important;
+  position: absolute !important;
+  right: -32px !important;
+  bottom: -32px !important;
+  width: 110px !important;
+  height: 110px !important;
+  border-radius: 999px !important;
+  background: rgba(38, 63, 143, 0.10) !important;
+}
+
+.stat-card::after {
+  display: none !important;
+}
+
+.stat-card span {
+  display: block !important;
+  font-size: 12px !important;
+  text-transform: uppercase !important;
+  letter-spacing: 0.08em !important;
+  color: #7a8496 !important;
+  font-weight: 900 !important;
+}
+
+.stat-card strong {
+  font-size: 34px !important;
+  margin-top: 18px !important;
+  color: #172033 !important;
+  font-weight: 950 !important;
+}
+
+/* Dashboard search becomes a large command box */
+.dashboard-search-panel {
+  border-radius: 34px !important;
+  padding: 26px !important;
+  background:
+    linear-gradient(135deg, #ffffff, #edf2ff) !important;
+  border: 1px solid #dbe3ef !important;
+}
+
+.dashboard-search-panel input {
+  height: 62px !important;
+  font-size: 18px !important;
+  border-radius: 24px !important;
+  background: #ffffff !important;
+  border: 1px solid #ccd6e5 !important;
+  box-shadow: inset 0 2px 0 rgba(23, 32, 51, 0.02) !important;
+}
+
+#dashboardPriceResults {
+  display: grid !important;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)) !important;
+  gap: 12px !important;
+  margin-top: 16px !important;
+}
+
+.price-search-item {
+  border-radius: 24px !important;
+  padding: 16px !important;
+  background: #ffffff !important;
+  border: 1px solid #dbe3ef !important;
+  box-shadow: 0 10px 26px rgba(23, 32, 51, 0.06) !important;
+}
+
+/* =========================================================
+   PANELS: DATA ENTRY SECTIONS LOOK DIFFERENT
+========================================================= */
+
+.panel {
+  border-radius: 30px !important;
+  padding: 22px !important;
+  background: #ffffff !important;
+  border: 1px solid #dbe3ef !important;
+  box-shadow: 0 18px 42px rgba(23, 32, 51, 0.07) !important;
+  margin-bottom: 20px !important;
+}
+
+.panel-header {
+  padding-bottom: 14px !important;
+  border-bottom: 1px solid #edf2f7 !important;
+  margin-bottom: 18px !important;
+}
+
+.panel-header.split {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: space-between !important;
+  gap: 18px !important;
+}
+
+.panel-header h2,
+.panel h3 {
+  color: #172033 !important;
+  font-size: 21px !important;
+  font-weight: 950 !important;
+  letter-spacing: -0.03em !important;
+}
+
+.panel-header p {
+  font-size: 13px !important;
+  color: #7a8496 !important;
+}
+
+/* Forms look like POS data forms */
+.form-grid {
+  gap: 16px !important;
+}
+
+.form-grid.two,
+.form-grid.three {
+  background: #f8fafc !important;
+  border: 1px solid #e4ebf5 !important;
+  border-radius: 28px !important;
+  padding: 18px !important;
+}
+
+label {
+  display: inline-flex !important;
+  align-items: center !important;
+  width: auto !important;
+  margin-bottom: 7px !important;
+  padding: 5px 9px !important;
+  border-radius: 999px !important;
+  background: #edf2ff !important;
+  color: #263f8f !important;
+  font-size: 11px !important;
+  font-weight: 950 !important;
+  text-transform: uppercase !important;
+  letter-spacing: 0.06em !important;
+}
+
+input,
+select,
+textarea {
+  min-height: 50px !important;
+  border-radius: 18px !important;
+  background: #ffffff !important;
+  border: 1px solid #ccd6e5 !important;
+  color: #172033 !important;
+  padding: 13px 15px !important;
+  box-shadow: inset 0 1px 0 rgba(23, 32, 51, 0.03) !important;
+}
+
+input:focus,
+select:focus,
+textarea:focus {
+  border-color: #263f8f !important;
+  box-shadow: 0 0 0 5px rgba(38, 63, 143, 0.12) !important;
+}
+
+/* Sales / purchase add rows become large action bars */
+.sale-add-row,
+.filters-row,
+.backup-actions {
+  background: #f8fafc !important;
+  border: 1px solid #e4ebf5 !important;
+  border-radius: 26px !important;
+  padding: 14px !important;
+  display: flex !important;
+  gap: 12px !important;
+  align-items: center !important;
+}
+
+.sale-add-row input {
+  max-width: 150px !important;
+}
+
+/* =========================================================
+   BUTTONS: BIG POS BUTTON APPEARANCE
+========================================================= */
+
+.primary-btn,
+.secondary-btn,
+.ghost-btn,
+.file-btn,
+.danger-btn,
+.table-btn {
+  border-radius: 18px !important;
+  min-height: 46px !important;
+  padding: 12px 18px !important;
+  font-weight: 950 !important;
+  letter-spacing: 0.01em !important;
+  border: none !important;
+  transition: transform 0.18s ease, box-shadow 0.18s ease !important;
+}
+
+.primary-btn {
+  background: linear-gradient(135deg, #172033, #263f8f) !important;
+  color: #ffffff !important;
+  box-shadow: 0 14px 28px rgba(38, 63, 143, 0.28) !important;
+}
+
+.secondary-btn {
+  background: #edf2ff !important;
+  color: #263f8f !important;
+  border: 1px solid #c8d5ff !important;
+}
+
+.ghost-btn {
+  background: #f1f5f9 !important;
+  color: #334155 !important;
+  border: 1px solid #dbe3ef !important;
+}
+
+.file-btn {
+  background: #ecfdf5 !important;
+  color: #0f8a5f !important;
+  border: 1px solid #bbf7d0 !important;
+}
+
+.danger-btn,
+.table-btn.danger {
+  background: #fff1f2 !important;
+  color: #c02626 !important;
+  border: 1px solid #fecdd3 !important;
+}
+
+.primary-btn:hover,
+.secondary-btn:hover,
+.ghost-btn:hover,
+.file-btn:hover,
+.danger-btn:hover,
+.table-btn:hover {
+  transform: translateY(-2px) !important;
+}
+
+.table-btn {
+  min-height: 34px !important;
+  padding: 8px 11px !important;
+  border-radius: 13px !important;
+  font-size: 12px !important;
+  background: #edf2ff !important;
+  color: #263f8f !important;
+}
+
+/* Checkout button feels like POS */
+#checkoutBtn,
+#completePurchaseBtn {
+  width: 100% !important;
+  min-height: 58px !important;
+  font-size: 16px !important;
+  border-radius: 22px !important;
+}
+
+/* =========================================================
+   TABLES: CARD-STYLE TABLES
+========================================================= */
+
+.table-wrap {
+  border: none !important;
+  border-radius: 28px !important;
+  background: transparent !important;
+  overflow-x: auto !important;
+}
+
+table {
+  border-collapse: separate !important;
+  border-spacing: 0 10px !important;
+  background: transparent !important;
+  min-width: 760px !important;
+}
+
+thead th,
+th {
+  background: transparent !important;
+  color: #7a8496 !important;
+  border: none !important;
+  font-size: 11px !important;
+  font-weight: 950 !important;
+  text-transform: uppercase !important;
+  letter-spacing: 0.08em !important;
+  padding: 8px 12px !important;
+}
+
+tbody tr {
+  background: #ffffff !important;
+  box-shadow: 0 10px 24px rgba(23, 32, 51, 0.055) !important;
+}
+
+td {
+  border: none !important;
+  padding: 16px 12px !important;
+  background: #ffffff !important;
+}
+
+tbody tr td:first-child {
+  border-radius: 18px 0 0 18px !important;
+}
+
+tbody tr td:last-child {
+  border-radius: 0 18px 18px 0 !important;
+}
+
+tbody tr:hover td {
+  background: #f8fafc !important;
+}
+
+/* Badges */
+.badge {
+  border-radius: 999px !important;
+  padding: 7px 11px !important;
+  font-size: 11px !important;
+  font-weight: 950 !important;
+}
+
+.badge.success {
+  background: #dcfce7 !important;
+  color: #0f8a5f !important;
+}
+
+.badge.warning {
+  background: #fef3c7 !important;
+  color: #b45309 !important;
+}
+
+.badge.danger {
+  background: #fee2e2 !important;
+  color: #c02626 !important;
+}
+
+.badge.info {
+  background: #edf2ff !important;
+  color: #263f8f !important;
+}
+
+/* =========================================================
+   SALES CHECKOUT PANEL
+========================================================= */
+
+.checkout-panel {
+  position: sticky !important;
+  top: 118px !important;
+  border-radius: 32px !important;
+  background:
+    linear-gradient(135deg, #172033, #263f8f) !important;
+  color: #ffffff !important;
+  border: none !important;
+  box-shadow: 0 22px 48px rgba(38, 63, 143, 0.26) !important;
+}
+
+.checkout-panel h3,
+.checkout-panel p,
+.checkout-panel span,
+.checkout-panel strong {
+  color: #ffffff !important;
+}
+
+.checkout-line {
+  border-bottom: 1px solid rgba(255, 255, 255, 0.18) !important;
+}
+
+.checkout-line.total {
+  font-size: 22px !important;
+}
+
+/* Alerts */
+.alert-item {
+  border: none !important;
+  border-radius: 24px !important;
+  background: #f8fafc !important;
+  box-shadow: inset 4px 0 0 #263f8f !important;
+}
+
+/* Modal */
+.modal {
+  background: rgba(23, 32, 51, 0.68) !important;
+  backdrop-filter: blur(6px) !important;
+}
+
+.modal-card {
+  border-radius: 34px !important;
+  border: none !important;
+  box-shadow: 0 35px 80px rgba(0, 0, 0, 0.28) !important;
+}
+
+.modal-header {
+  border-bottom: 1px solid #edf2f7 !important;
+  padding-bottom: 14px !important;
+}
+
+.modal-close {
+  background: #f1f5f9 !important;
+  color: #172033 !important;
+}
+
+/* Toast */
+.toast {
+  top: auto !important;
+  right: 22px !important;
+  bottom: 22px !important;
+  border-radius: 18px !important;
+  background: #172033 !important;
+  box-shadow: 0 18px 36px rgba(23, 32, 51, 0.28) !important;
+}
+
+/* =========================================================
+   RECEIPT / REPORT: KEEP FUNCTIONAL BUT NEW STYLE
+========================================================= */
+
+.receipt-card {
+  width: min(680px, 100%) !important;
+}
+
+.receipt-content {
+  border-radius: 0 !important;
+  background: #ffffff !important;
+}
+
+.receipt-brand-header {
+  border-bottom: 4px double #263f8f !important;
+}
+
+.receipt-brand-header h2 {
+  color: #172033 !important;
+  letter-spacing: -0.03em !important;
+}
+
+.receipt-title {
+  color: #263f8f !important;
+}
+
+.receipt-content thead th {
+  background: #172033 !important;
+  color: #ffffff !important;
+}
+
+.receipt-total-line.grand {
+  border-top-color: #263f8f !important;
+  color: #263f8f !important;
+}
+
+.report-logo-line {
+  border-bottom: 4px double #263f8f !important;
+}
+
+.report-logo-line h1 {
+  color: #172033 !important;
+}
+
+/* =========================================================
+   MOBILE: BOTTOM-NAV STYLE, NOT OLD SIDEBAR LOOK
+========================================================= */
+
+@media (max-width: 768px) {
+  .login-screen {
+    padding: 16px !important;
+  }
+
+  .login-card {
+    display: block !important;
+    min-height: auto !important;
+    padding: 26px !important;
+    border-radius: 30px !important;
+  }
+
+  .login-card::before {
+    content: "PHARMACY POS";
+    min-height: 150px !important;
+    border-radius: 24px !important;
+    margin-bottom: 24px !important;
+    padding: 22px !important;
+    font-size: 30px !important;
+  }
+
+  .login-card > * {
+    padding-left: 0 !important;
+    padding-right: 0 !important;
+  }
+
+  .login-logo {
+    margin-top: 0 !important;
+  }
+
+  .app-shell:not(.hidden) {
+    padding: 12px 12px 98px !important;
+  }
+
+  .sidebar {
+    top: auto !important;
+    left: 10px !important;
+    right: 10px !important;
+    bottom: 10px !important;
+    width: auto !important;
+    height: 76px !important;
+    padding: 9px !important;
+    border-radius: 28px !important;
+    background: rgba(23, 32, 51, 0.94) !important;
+    backdrop-filter: blur(16px) !important;
+    display: flex !important;
+    align-items: center !important;
+    overflow-x: auto !important;
+    overflow-y: hidden !important;
+  }
+
+  .logo-sidebar-card {
+    display: none !important;
+  }
+
+  .sidebar nav {
+    display: flex !important;
+    flex-direction: row !important;
+    gap: 8px !important;
+    width: max-content !important;
+    min-width: 100% !important;
+    max-height: none !important;
+    opacity: 1 !important;
+    overflow-x: auto !important;
+    overflow-y: hidden !important;
+    padding: 0 !important;
+    background: transparent !important;
+    pointer-events: auto !important;
+  }
+
+  .nav-link {
+    flex: 0 0 62px !important;
+    width: 62px !important;
+    height: 58px !important;
+    border-radius: 22px !important;
+    font-size: 9px !important;
+    padding: 6px !important;
+    margin: 0 !important;
+    color: #cbd5e1 !important;
+    background: rgba(255, 255, 255, 0.08) !important;
+  }
+
+  .nav-link.active {
+    background: #ffffff !important;
+    color: #172033 !important;
+  }
+
+  .mobile-user-card {
+    display: none !important;
+  }
+
+  .main-content {
+    padding: 0 !important;
+    margin: 0 !important;
+  }
+
+  .topbar {
+    position: static !important;
+    display: block !important;
+    min-height: auto !important;
+    border-radius: 28px !important;
+    padding: 16px !important;
+  }
+
+  .topbar-brand {
+    align-items: center !important;
+  }
+
+  .topbar-logo {
+    width: 48px !important;
+    height: 48px !important;
+  }
+
+  .topbar h1 {
+    font-size: 23px !important;
+  }
+
+  .topbar p {
+    font-size: 12px !important;
+  }
+
+  .top-actions {
+    margin-top: 14px !important;
+    overflow-x: auto !important;
+  }
+
+  .cards-grid,
+  .cards-grid.compact {
+    grid-template-columns: 1fr 1fr !important;
+    gap: 12px !important;
+  }
+
+  .stat-card,
+  .stat-card:nth-child(1),
+  .stat-card:nth-child(2),
+  .stat-card:nth-child(3) {
+    grid-column: span 1 !important;
+    min-height: 132px !important;
+    border-radius: 26px !important;
+    padding: 16px !important;
+  }
+
+  .stat-card strong {
+    font-size: 25px !important;
+  }
+
+  .two-column,
+  .sales-layout,
+  .form-grid.two,
+  .form-grid.three {
+    grid-template-columns: 1fr !important;
+  }
+
+  .span-two,
+  .span-three {
+    grid-column: span 1 !important;
+  }
+
+  .panel {
+    border-radius: 28px !important;
+    padding: 17px !important;
+  }
+
+  .panel-header.split,
+  .sale-add-row,
+  .filters-row,
+  .backup-actions {
+    display: grid !important;
+    grid-template-columns: 1fr !important;
+  }
+
+  .sale-add-row input {
+    max-width: none !important;
+  }
+
+  .checkout-panel {
+    position: static !important;
+  }
+
+  .table-wrap table,
+  table {
+    min-width: 720px !important;
+  }
+
+  .floating-sync-btn {
+    right: 16px !important;
+    bottom: 96px !important;
+    background: linear-gradient(135deg, #0f8a5f, #10b981) !important;
+  }
+}
+
+@media (max-width: 430px) {
+  .cards-grid,
+  .cards-grid.compact {
+    grid-template-columns: 1fr !important;
+  }
+
+  .stat-card,
+  .stat-card:nth-child(1),
+  .stat-card:nth-child(2),
+  .stat-card:nth-child(3) {
+    grid-column: span 1 !important;
+  }
+
+  .topbar-logo {
+    display: none !important;
+  }
+
+  .nav-link {
+    flex-basis: 58px !important;
+    width: 58px !important;
+  }
+}
+
+/* =========================================================
+   SIGNAL STYLE SIDEBAR + CLEAN SPLIT LOGIN
+   Paste at the VERY BOTTOM of src/styles.css
+========================================================= */
+
+/* Stop old PHARMACY POS login pseudo panel */
+.login-card::before {
+  content: none !important;
+  display: none !important;
+}
+
+/* Main app background */
+body {
+  background: #edf3fb !important;
+  font-family: "Inter", "Segoe UI", Arial, sans-serif !important;
+}
+
+/* =========================
+   LOGIN PAGE
+========================= */
+
+.login-screen {
+  min-height: 100vh !important;
+  display: grid !important;
+  place-items: center !important;
+  padding: 28px !important;
+  background:
+    radial-gradient(circle at top left, rgba(49, 130, 206, 0.25), transparent 32%),
+    linear-gradient(135deg, #dbeafe 0%, #f8fafc 55%, #e0f2fe 100%) !important;
+}
+
+.login-split-card {
+  width: min(980px, 100%) !important;
+  min-height: 560px !important;
+  display: grid !important;
+  grid-template-columns: 0.9fr 1.1fr !important;
+  padding: 0 !important;
+  overflow: hidden !important;
+  border-radius: 32px !important;
+  background: #ffffff !important;
+  border: 1px solid rgba(203, 213, 225, 0.75) !important;
+  box-shadow: 0 30px 80px rgba(15, 23, 42, 0.20) !important;
+  text-align: left !important;
+}
+
+.login-visual-panel {
+  background:
+    radial-gradient(circle at 30% 20%, rgba(96, 165, 250, 0.45), transparent 26%),
+    linear-gradient(160deg, #071b3a 0%, #0d2f6d 52%, #1e66d0 100%) !important;
+  display: grid !important;
+  place-items: center !important;
+  padding: 40px !important;
+  position: relative !important;
+}
+
+.login-visual-panel::after {
+  content: "" !important;
+  position: absolute !important;
+  width: 260px !important;
+  height: 260px !important;
+  border-radius: 50% !important;
+  border: 1px solid rgba(255, 255, 255, 0.18) !important;
+  bottom: -90px !important;
+  right: -70px !important;
+}
+
+.login-logo-box {
+  width: 240px !important;
+  height: 240px !important;
+  border-radius: 42px !important;
+  background: rgba(255, 255, 255, 0.96) !important;
+  display: grid !important;
+  place-items: center !important;
+  padding: 24px !important;
+  box-shadow: 0 24px 60px rgba(0, 0, 0, 0.28) !important;
+  position: relative !important;
+  z-index: 2 !important;
+}
+
+.login-logo-large {
+  width: 100% !important;
+  max-width: 185px !important;
+  height: auto !important;
+  object-fit: contain !important;
+}
+
+.login-form-panel {
+  padding: 54px 52px !important;
+  display: flex !important;
+  flex-direction: column !important;
+  justify-content: center !important;
+}
+
+.login-logo-small {
+  width: 78px !important;
+  height: 78px !important;
+  object-fit: contain !important;
+  border-radius: 20px !important;
+  background: #f8fafc !important;
+  border: 1px solid #e2e8f0 !important;
+  padding: 7px !important;
+  margin-bottom: 22px !important;
+}
+
+.login-form-panel h1 {
+  margin: 0 0 10px !important;
+  color: #0f172a !important;
+  font-size: 34px !important;
+  line-height: 1.08 !important;
+  font-weight: 950 !important;
+  letter-spacing: -0.05em !important;
+}
+
+.login-form-panel p {
+  margin: 0 !important;
+  color: #64748b !important;
+  font-size: 15px !important;
+  line-height: 1.6 !important;
+}
+
+.login-form {
+  margin-top: 30px !important;
+  display: grid !important;
+  gap: 14px !important;
+}
+
+.login-form label {
+  background: transparent !important;
+  color: #334155 !important;
+  padding: 0 !important;
+  margin: 0 !important;
+  text-transform: none !important;
+  letter-spacing: 0 !important;
+  font-size: 13px !important;
+  font-weight: 800 !important;
+}
+
+.login-form input {
+  height: 54px !important;
+  border-radius: 16px !important;
+  border: 1px solid #cbd5e1 !important;
+  background: #f8fafc !important;
+  padding: 0 16px !important;
+  color: #0f172a !important;
+}
+
+.login-form input:focus {
+  border-color: #2563eb !important;
+  background: #ffffff !important;
+  box-shadow: 0 0 0 4px rgba(37, 99, 235, 0.14) !important;
+}
+
+.login-form .primary-btn {
+  height: 56px !important;
+  margin-top: 10px !important;
+  border-radius: 16px !important;
+  background: linear-gradient(135deg, #1d4ed8, #2563eb) !important;
+  color: #ffffff !important;
+  font-size: 15px !important;
+  font-weight: 900 !important;
+  box-shadow: 0 16px 30px rgba(37, 99, 235, 0.28) !important;
+}
+
+/* =========================
+   APP LAYOUT
+========================= */
+
+.app-shell:not(.hidden) {
+  display: block !important;
+  min-height: 100vh !important;
+  padding: 16px 18px 16px 108px !important;
+  background: #edf3fb !important;
+}
+
+.main-content {
+  margin-left: 0 !important;
+  width: 100% !important;
+  padding: 0 !important;
+}
+
+/* =========================
+   SIGNAL STYLE SIDEBAR
+========================= */
+
+.sidebar {
+  position: fixed !important;
+  top: 16px !important;
+  left: 16px !important;
+  bottom: 16px !important;
+  width: 76px !important;
+  height: auto !important;
+  padding: 14px 9px !important;
+  background: #071b3a !important;
+  color: #ffffff !important;
+  border-radius: 22px !important;
+  border: 1px solid rgba(148, 163, 184, 0.16) !important;
+  box-shadow: 0 24px 60px rgba(15, 23, 42, 0.32) !important;
+  overflow-y: auto !important;
+  overflow-x: hidden !important;
+  z-index: 1000 !important;
+}
+
+/* sidebar logo/profile top */
+.logo-sidebar-card {
+  width: 58px !important;
+  min-height: 74px !important;
+  margin: 0 auto 18px !important;
+  padding: 7px !important;
+  display: grid !important;
+  place-items: center !important;
+  background: transparent !important;
+  border: none !important;
+  box-shadow: none !important;
+  text-align: center !important;
+}
+
+.sidebar-logo {
+  width: 44px !important;
+  height: 44px !important;
+  max-width: 44px !important;
+  object-fit: contain !important;
+  background: #ffffff !important;
+  border-radius: 50% !important;
+  padding: 4px !important;
+  margin: 0 auto 7px !important;
+  box-shadow: 0 8px 20px rgba(37, 99, 235, 0.32) !important;
+}
+
+.logo-sidebar-card strong {
+  display: block !important;
+  color: #ffffff !important;
+  font-size: 9px !important;
+  line-height: 1.1 !important;
+  font-weight: 900 !important;
+  text-align: center !important;
+  max-width: 58px !important;
+}
+
+.logo-sidebar-card span {
+  display: none !important;
+}
+
+/* nav list */
+.sidebar nav {
+  display: grid !important;
+  gap: 9px !important;
+  padding: 0 !important;
+  margin: 0 !important;
+  background: transparent !important;
+  max-height: none !important;
+  opacity: 1 !important;
+  overflow: visible !important;
+  pointer-events: auto !important;
+}
+
+.nav-link {
+  width: 56px !important;
+  height: 56px !important;
+  padding: 6px !important;
+  margin: 0 auto !important;
+  border-radius: 14px !important;
+  display: grid !important;
+  place-items: center !important;
+  text-align: center !important;
+  background: transparent !important;
+  color: #94a3b8 !important;
+  border: 1px solid transparent !important;
+  font-size: 0 !important;
+  line-height: 1 !important;
+  transition: all 0.22s ease !important;
+  overflow: hidden !important;
+  position: relative !important;
+}
+
+.nav-link::before {
+  width: 24px !important;
+  height: 24px !important;
+  min-width: 24px !important;
+  display: grid !important;
+  place-items: center !important;
+  font-size: 17px !important;
+  border-radius: 0 !important;
+  background: transparent !important;
+  box-shadow: none !important;
+  margin: 0 !important;
+}
+
+.nav-link:hover {
+  background: rgba(59, 130, 246, 0.15) !important;
+  color: #ffffff !important;
+  transform: translateY(-1px) !important;
+}
+
+.nav-link.active {
+  background: linear-gradient(135deg, #1d4ed8, #2563eb) !important;
+  color: #ffffff !important;
+  border-color: rgba(96, 165, 250, 0.45) !important;
+  box-shadow: 0 12px 28px rgba(37, 99, 235, 0.38) !important;
+}
+
+.nav-link.active::after {
+  display: none !important;
+}
+
+/* optional tooltips on hover */
+.nav-link::after {
+  content: attr(data-page) !important;
+  position: fixed !important;
+  left: 92px !important;
+  background: #0f172a !important;
+  color: #ffffff !important;
+  padding: 7px 10px !important;
+  border-radius: 10px !important;
+  font-size: 12px !important;
+  font-weight: 800 !important;
+  text-transform: capitalize !important;
+  opacity: 0 !important;
+  pointer-events: none !important;
+  transform: translateX(-6px) !important;
+  transition: 0.18s ease !important;
+  white-space: nowrap !important;
+  z-index: 3000 !important;
+}
+
+.nav-link:hover::after {
+  opacity: 1 !important;
+  transform: translateX(0) !important;
+}
+
+/* current user/logout compact */
+.mobile-user-card {
+  width: 56px !important;
+  margin: 14px auto 0 !important;
+  padding: 7px !important;
+  border-radius: 15px !important;
+  background: rgba(255, 255, 255, 0.06) !important;
+  border: 1px solid rgba(255, 255, 255, 0.08) !important;
+  display: grid !important;
+  gap: 7px !important;
+}
+
+.mobile-user-card p {
+  margin: 0 !important;
+  color: #cbd5e1 !important;
+  font-size: 8px !important;
+  line-height: 1.15 !important;
+  text-align: center !important;
+}
+
+.mobile-user-card .ghost-btn {
+  width: 100% !important;
+  min-height: 28px !important;
+  padding: 4px !important;
+  font-size: 8px !important;
+  border-radius: 10px !important;
+  background: rgba(239, 68, 68, 0.12) !important;
+  color: #fecaca !important;
+  border: 1px solid rgba(248, 113, 113, 0.18) !important;
+}
+
+/* =========================
+   TOPBAR LIKE DASHBOARD CARD
+========================= */
+
+.topbar {
+  min-height: 82px !important;
+  margin: 0 0 16px !important;
+  padding: 14px 18px !important;
+  border-radius: 18px !important;
+  background: rgba(255, 255, 255, 0.92) !important;
+  border: 1px solid #dbe3ef !important;
+  box-shadow: 0 12px 30px rgba(15, 23, 42, 0.07) !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: space-between !important;
+}
+
+.topbar-logo {
+  width: 46px !important;
+  height: 46px !important;
+  border-radius: 14px !important;
+  background: #f8fafc !important;
+  border: 1px solid #e2e8f0 !important;
+  padding: 5px !important;
+}
+
+.topbar h1 {
+  color: #0f172a !important;
+  font-size: 22px !important;
+  font-weight: 950 !important;
+  letter-spacing: -0.04em !important;
+}
+
+.topbar p {
+  color: #64748b !important;
+  font-size: 13px !important;
+}
+
+/* =========================
+   MOBILE
+========================= */
+
+@media (max-width: 768px) {
+  .login-screen {
+    padding: 16px !important;
+  }
+
+  .login-split-card {
+    display: block !important;
+    min-height: auto !important;
+    border-radius: 26px !important;
+  }
+
+  .login-visual-panel {
+    min-height: 210px !important;
+    padding: 28px !important;
+  }
+
+  .login-logo-box {
+    width: 150px !important;
+    height: 150px !important;
+    border-radius: 30px !important;
+  }
+
+  .login-logo-large {
+    max-width: 115px !important;
+  }
+
+  .login-form-panel {
+    padding: 28px 24px 32px !important;
+  }
+
+  .login-logo-small {
+    display: none !important;
+  }
+
+  .login-form-panel h1 {
+    font-size: 27px !important;
+  }
+
+  .app-shell:not(.hidden) {
+    padding: 12px 12px 92px !important;
+  }
+
+  .sidebar {
+    top: auto !important;
+    left: 10px !important;
+    right: 10px !important;
+    bottom: 10px !important;
+    width: auto !important;
+    height: 72px !important;
+    padding: 8px !important;
+    border-radius: 24px !important;
+    display: flex !important;
+    align-items: center !important;
+    overflow-x: auto !important;
+    overflow-y: hidden !important;
+  }
+
+  .logo-sidebar-card,
+  .mobile-user-card {
+    display: none !important;
+  }
+
+  .sidebar nav {
+    display: flex !important;
+    flex-direction: row !important;
+    gap: 8px !important;
+    min-width: max-content !important;
+    width: max-content !important;
+    overflow-x: auto !important;
+  }
+
+  .nav-link {
+    flex: 0 0 54px !important;
+    width: 54px !important;
+    height: 54px !important;
+    margin: 0 !important;
+    border-radius: 18px !important;
+  }
+
+  .nav-link::after {
+    display: none !important;
+  }
+
+  .main-content {
+    padding: 0 !important;
+  }
+
+  .topbar {
+    border-radius: 18px !important;
+    display: block !important;
+  }
+
+  .top-actions {
+    margin-top: 12px !important;
+    display: flex !important;
+    overflow-x: auto !important;
+  }
+}
+
+
+/* =========================================================
+   FINAL LOGIN + SIGNAL SIDEBAR LAYOUT
+   Paste this at the VERY BOTTOM of src/styles.css
+========================================================= */
+
+/* Remove old PHARMACY POS pseudo image/text */
+.login-card::before,
+.login-travel-card::before {
+  content: none !important;
+  display: none !important;
+}
+
+/* =========================================================
+   LOGIN PAGE LIKE SAMPLE IMAGE
+========================================================= */
+
+.login-screen.login-travel-style {
+  min-height: 100vh !important;
+  display: grid !important;
+  place-items: center !important;
+  padding: 34px !important;
+  overflow: hidden !important;
+  background:
+    radial-gradient(circle at 4% 4%, #ffffff 0 0, transparent 1px),
+    linear-gradient(135deg, #05a8df 0%, #009ad6 45%, #04b9df 100%) !important;
+  position: relative !important;
+}
+
+.login-screen.login-travel-style::before,
+.login-screen.login-travel-style::after {
+  content: "" !important;
+  position: absolute !important;
+  width: 170px !important;
+  height: 170px !important;
+  background:
+    radial-gradient(circle at 50% 0%, #ffffff 0 24%, transparent 25%),
+    radial-gradient(circle at 100% 50%, #ffffff 0 24%, transparent 25%),
+    radial-gradient(circle at 50% 100%, #ffffff 0 24%, transparent 25%),
+    radial-gradient(circle at 0% 50%, #ffffff 0 24%, transparent 25%) !important;
+  opacity: 0.95 !important;
+  pointer-events: none !important;
+}
+
+.login-screen.login-travel-style::before {
+  top: -70px !important;
+  left: -55px !important;
+}
+
+.login-screen.login-travel-style::after {
+  right: -60px !important;
+  bottom: -65px !important;
+}
+
+.login-travel-card {
+  width: min(960px, 100%) !important;
+  min-height: 565px !important;
+  padding: 0 !important;
+  border-radius: 14px !important;
+  overflow: hidden !important;
+  display: grid !important;
+  grid-template-columns: 1.15fr 1fr !important;
+  background: #ffffff !important;
+  border: none !important;
+  box-shadow: 0 30px 75px rgba(3, 37, 70, 0.34) !important;
+  text-align: left !important;
+  position: relative !important;
+  z-index: 2 !important;
+}
+
+/* Important reset from old CSS */
+.login-travel-card > * {
+  grid-column: auto !important;
+  padding-left: 0 !important;
+  padding-right: 0 !important;
+}
+
+/* Left logo/image side */
+.login-left-brand {
+  position: relative !important;
+  min-height: 565px !important;
+  padding: 46px 38px !important;
+  display: flex !important;
+  flex-direction: column !important;
+  justify-content: center !important;
+  align-items: center !important;
+  text-align: center !important;
+  overflow: hidden !important;
+  background:
+    linear-gradient(rgba(0, 80, 156, 0.40), rgba(3, 37, 70, 0.78)),
+    radial-gradient(circle at top left, rgba(255, 255, 255, 0.25), transparent 30%),
+    linear-gradient(145deg, #0b8de3 0%, #0866c6 50%, #042c70 100%) !important;
+}
+
+.login-left-brand::after {
+  content: "" !important;
+  position: absolute !important;
+  inset: auto -80px -80px auto !important;
+  width: 230px !important;
+  height: 230px !important;
+  border-radius: 50% !important;
+  border: 1px solid rgba(255, 255, 255, 0.25) !important;
+}
+
+.login-left-pattern {
+  position: absolute !important;
+  border-radius: 999px !important;
+  border: 1px dashed rgba(255, 255, 255, 0.30) !important;
+}
+
+.pattern-one {
+  width: 260px !important;
+  height: 260px !important;
+  top: -100px !important;
+  left: -80px !important;
+}
+
+.pattern-two {
+  width: 180px !important;
+  height: 180px !important;
+  right: -70px !important;
+  top: 60px !important;
+}
+
+.login-left-logo-card {
+  width: 250px !important;
+  height: 250px !important;
+  display: grid !important;
+  place-items: center !important;
+  padding: 24px !important;
+  border-radius: 36px !important;
+  background: rgba(255, 255, 255, 0.96) !important;
+  box-shadow: 0 28px 65px rgba(0, 0, 0, 0.28) !important;
+  position: relative !important;
+  z-index: 2 !important;
+}
+
+.login-hero-logo {
+  width: 100% !important;
+  max-width: 195px !important;
+  height: auto !important;
+  object-fit: contain !important;
+}
+
+.login-left-text {
+  position: relative !important;
+  z-index: 2 !important;
+  margin-top: 32px !important;
+  color: #ffffff !important;
+  max-width: 360px !important;
+}
+
+.login-left-text h2 {
+  margin: 0 0 10px !important;
+  font-size: 30px !important;
+  line-height: 1.05 !important;
+  font-weight: 950 !important;
+  letter-spacing: -0.04em !important;
+  color: #ffffff !important;
+}
+
+.login-left-text p {
+  margin: 0 !important;
+  color: rgba(255, 255, 255, 0.86) !important;
+  font-size: 13px !important;
+  line-height: 1.6 !important;
+}
+
+/* Right login side */
+.login-right-form {
+  position: relative !important;
+  min-height: 565px !important;
+  padding: 54px 62px !important;
+  display: flex !important;
+  flex-direction: column !important;
+  justify-content: center !important;
+  background:
+    linear-gradient(180deg, #ffffff 0%, #f9fcff 100%) !important;
+  overflow: hidden !important;
+}
+
+.login-right-form::before {
+  content: "" !important;
+  position: absolute !important;
+  right: -50px !important;
+  top: -50px !important;
+  width: 150px !important;
+  height: 150px !important;
+  border-radius: 50% !important;
+  background: rgba(5, 168, 223, 0.12) !important;
+}
+
+.login-right-form h1 {
+  margin: 0 !important;
+  color: #08a1de !important;
+  font-size: 42px !important;
+  font-weight: 950 !important;
+  letter-spacing: -0.06em !important;
+  text-align: center !important;
+}
+
+.login-right-form > p {
+  margin: 6px 0 30px !important;
+  color: #64748b !important;
+  text-align: center !important;
+  font-size: 13px !important;
+}
+
+.login-welcome-icon {
+  position: absolute !important;
+  top: 72px !important;
+  right: 95px !important;
+  color: #0ea5e9 !important;
+  font-size: 25px !important;
+  transform: rotate(-15deg) !important;
+}
+
+.login-welcome-icon::after {
+  content: "" !important;
+  position: absolute !important;
+  width: 70px !important;
+  height: 28px !important;
+  border-top: 1px dashed rgba(14, 165, 233, 0.65) !important;
+  border-radius: 50% !important;
+  left: 20px !important;
+  top: 5px !important;
+}
+
+.login-right-form .login-form {
+  margin: 0 auto !important;
+  width: min(330px, 100%) !important;
+  display: grid !important;
+  gap: 10px !important;
+}
+
+.login-right-form label {
+  background: transparent !important;
+  padding: 0 !important;
+  margin: 7px 0 0 !important;
+  color: #0ea5e9 !important;
+  font-size: 11px !important;
+  font-weight: 850 !important;
+  text-transform: none !important;
+  letter-spacing: 0 !important;
+}
+
+.login-input-wrap {
+  height: 40px !important;
+  display: flex !important;
+  align-items: center !important;
+  gap: 8px !important;
+  padding: 0 10px !important;
+  border-radius: 7px !important;
+  border: 1px solid #35bce8 !important;
+  background: #ffffff !important;
+}
+
+.login-input-wrap span {
+  font-size: 14px !important;
+  color: #0ea5e9 !important;
+  width: 18px !important;
+  text-align: center !important;
+}
+
+.login-input-wrap input {
+  height: 100% !important;
+  min-height: 0 !important;
+  border: none !important;
+  outline: none !important;
+  background: transparent !important;
+  padding: 0 !important;
+  border-radius: 0 !important;
+  box-shadow: none !important;
+  font-size: 13px !important;
+  color: #0f172a !important;
+}
+
+.login-input-wrap:focus-within {
+  border-color: #0284c7 !important;
+  box-shadow: 0 0 0 3px rgba(14, 165, 233, 0.14) !important;
+}
+
+.login-main-btn {
+  width: 120px !important;
+  min-height: 38px !important;
+  margin: 18px auto 0 !important;
+  border-radius: 5px !important;
+  background: #0ea5e9 !important;
+  color: #ffffff !important;
+  box-shadow: 0 12px 24px rgba(14, 165, 233, 0.25) !important;
+  font-size: 12px !important;
+  font-weight: 900 !important;
+  text-transform: uppercase !important;
+}
+
+.login-main-btn:hover {
+  background: #0284c7 !important;
+}
+
+/* =========================================================
+   SIGNAL-STYLE COMPACT SIDEBAR
+========================================================= */
+
+.app-shell:not(.hidden) {
+  display: block !important;
+  min-height: 100vh !important;
+  padding: 16px 18px 16px 108px !important;
+  background: #edf3fb !important;
+}
+
+.main-content {
+  margin-left: 0 !important;
+  width: 100% !important;
+  padding: 0 !important;
+}
+
+.sidebar {
+  position: fixed !important;
+  top: 16px !important;
+  left: 16px !important;
+  bottom: 16px !important;
+  width: 76px !important;
+  height: auto !important;
+  padding: 14px 9px !important;
+  background: #071b3a !important;
+  color: #ffffff !important;
+  border-radius: 22px !important;
+  border: 1px solid rgba(148, 163, 184, 0.16) !important;
+  box-shadow: 0 24px 60px rgba(15, 23, 42, 0.32) !important;
+  overflow-y: auto !important;
+  overflow-x: hidden !important;
+  z-index: 1000 !important;
+}
+
+.logo-sidebar-card {
+  width: 58px !important;
+  min-height: 74px !important;
+  margin: 0 auto 18px !important;
+  padding: 7px !important;
+  display: grid !important;
+  place-items: center !important;
+  background: transparent !important;
+  border: none !important;
+  box-shadow: none !important;
+  text-align: center !important;
+}
+
+.sidebar-logo {
+  width: 44px !important;
+  height: 44px !important;
+  max-width: 44px !important;
+  object-fit: contain !important;
+  background: #ffffff !important;
+  border-radius: 50% !important;
+  padding: 4px !important;
+  margin: 0 auto 7px !important;
+  box-shadow: 0 8px 20px rgba(37, 99, 235, 0.32) !important;
+}
+
+.logo-sidebar-card strong {
+  display: block !important;
+  color: #ffffff !important;
+  font-size: 9px !important;
+  line-height: 1.1 !important;
+  font-weight: 900 !important;
+  text-align: center !important;
+  max-width: 58px !important;
+}
+
+.logo-sidebar-card span {
+  display: none !important;
+}
+
+.sidebar nav {
+  display: grid !important;
+  gap: 9px !important;
+  padding: 0 !important;
+  margin: 0 !important;
+  background: transparent !important;
+  max-height: none !important;
+  opacity: 1 !important;
+  overflow: visible !important;
+  pointer-events: auto !important;
+}
+
+.nav-link {
+  width: 56px !important;
+  height: 56px !important;
+  padding: 6px !important;
+  margin: 0 auto !important;
+  border-radius: 14px !important;
+  display: grid !important;
+  place-items: center !important;
+  text-align: center !important;
+  background: transparent !important;
+  color: #94a3b8 !important;
+  border: 1px solid transparent !important;
+  font-size: 0 !important;
+  line-height: 1 !important;
+  transition: all 0.22s ease !important;
+  overflow: hidden !important;
+  position: relative !important;
+}
+
+.nav-link::before {
+  width: 24px !important;
+  height: 24px !important;
+  min-width: 24px !important;
+  display: grid !important;
+  place-items: center !important;
+  font-size: 17px !important;
+  border-radius: 0 !important;
+  background: transparent !important;
+  box-shadow: none !important;
+  margin: 0 !important;
+}
+
+.nav-link[data-page="dashboard"]::before { content: "⌂" !important; }
+.nav-link[data-page="inventory"]::before { content: "✚" !important; }
+.nav-link[data-page="sales"]::before { content: "▣" !important; }
+.nav-link[data-page="purchases"]::before { content: "◫" !important; }
+.nav-link[data-page="suppliers"]::before { content: "◇" !important; }
+.nav-link[data-page="reports"]::before { content: "◔" !important; }
+.nav-link[data-page="users"]::before { content: "◉" !important; }
+.nav-link[data-page="backup"]::before { content: "▤" !important; }
+
+.nav-link:hover {
+  background: rgba(59, 130, 246, 0.15) !important;
+  color: #ffffff !important;
+  transform: translateY(-1px) !important;
+}
+
+.nav-link.active {
+  background: linear-gradient(135deg, #1d4ed8, #2563eb) !important;
+  color: #ffffff !important;
+  border-color: rgba(96, 165, 250, 0.45) !important;
+  box-shadow: 0 12px 28px rgba(37, 99, 235, 0.38) !important;
+}
+
+.nav-link.active::after {
+  display: none !important;
+}
+
+/* Tooltip */
+.nav-link::after {
+  content: attr(data-page) !important;
+  position: fixed !important;
+  left: 92px !important;
+  background: #0f172a !important;
+  color: #ffffff !important;
+  padding: 7px 10px !important;
+  border-radius: 10px !important;
+  font-size: 12px !important;
+  font-weight: 800 !important;
+  text-transform: capitalize !important;
+  opacity: 0 !important;
+  pointer-events: none !important;
+  transform: translateX(-6px) !important;
+  transition: 0.18s ease !important;
+  white-space: nowrap !important;
+  z-index: 3000 !important;
+}
+
+.nav-link:hover::after {
+  opacity: 1 !important;
+  transform: translateX(0) !important;
+}
+
+.mobile-user-card {
+  width: 56px !important;
+  margin: 14px auto 0 !important;
+  padding: 7px !important;
+  border-radius: 15px !important;
+  background: rgba(255, 255, 255, 0.06) !important;
+  border: 1px solid rgba(255, 255, 255, 0.08) !important;
+  display: grid !important;
+  gap: 7px !important;
+}
+
+.mobile-user-card p {
+  margin: 0 !important;
+  color: #cbd5e1 !important;
+  font-size: 8px !important;
+  line-height: 1.15 !important;
+  text-align: center !important;
+}
+
+.mobile-user-card .ghost-btn {
+  width: 100% !important;
+  min-height: 28px !important;
+  padding: 4px !important;
+  font-size: 8px !important;
+  border-radius: 10px !important;
+  background: rgba(239, 68, 68, 0.12) !important;
+  color: #fecaca !important;
+  border: 1px solid rgba(248, 113, 113, 0.18) !important;
+}
+
+/* Keep topbar aligned with compact sidebar */
+.topbar {
+  min-height: 82px !important;
+  margin: 0 0 16px !important;
+  padding: 14px 18px !important;
+  border-radius: 18px !important;
+  background: rgba(255, 255, 255, 0.92) !important;
+  border: 1px solid #dbe3ef !important;
+  box-shadow: 0 12px 30px rgba(15, 23, 42, 0.07) !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: space-between !important;
+}
+
+.topbar-logo {
+  width: 46px !important;
+  height: 46px !important;
+  border-radius: 14px !important;
+  background: #f8fafc !important;
+  border: 1px solid #e2e8f0 !important;
+  padding: 5px !important;
+}
+
+.topbar h1 {
+  color: #0f172a !important;
+  font-size: 22px !important;
+  font-weight: 950 !important;
+  letter-spacing: -0.04em !important;
+}
+
+.topbar p {
+  color: #64748b !important;
+  font-size: 13px !important;
+}
+
+/* =========================================================
+   MOBILE
+========================================================= */
+
+@media (max-width: 768px) {
+  .login-screen.login-travel-style {
+    padding: 16px !important;
+  }
+
+  .login-travel-card {
+    display: block !important;
+    min-height: auto !important;
+    border-radius: 20px !important;
+  }
+
+  .login-left-brand {
+    min-height: 245px !important;
+    padding: 28px !important;
+  }
+
+  .login-left-logo-card {
+    width: 155px !important;
+    height: 155px !important;
+    border-radius: 28px !important;
+  }
+
+  .login-hero-logo {
+    max-width: 120px !important;
+  }
+
+  .login-left-text {
+    margin-top: 18px !important;
+  }
+
+  .login-left-text h2 {
+    font-size: 24px !important;
+  }
+
+  .login-left-text p {
+    font-size: 12px !important;
+  }
+
+  .login-right-form {
+    min-height: auto !important;
+    padding: 34px 24px 38px !important;
+  }
+
+  .login-right-form h1 {
+    font-size: 36px !important;
+  }
+
+  .login-welcome-icon {
+    top: 28px !important;
+    right: 45px !important;
+  }
+
+  .app-shell:not(.hidden) {
+    padding: 12px 12px 92px !important;
+  }
+
+  .sidebar {
+    top: auto !important;
+    left: 10px !important;
+    right: 10px !important;
+    bottom: 10px !important;
+    width: auto !important;
+    height: 72px !important;
+    padding: 8px !important;
+    border-radius: 24px !important;
+    display: flex !important;
+    align-items: center !important;
+    overflow-x: auto !important;
+    overflow-y: hidden !important;
+  }
+
+  .logo-sidebar-card,
+  .mobile-user-card {
+    display: none !important;
+  }
+
+  .sidebar nav {
+    display: flex !important;
+    flex-direction: row !important;
+    gap: 8px !important;
+    min-width: max-content !important;
+    width: max-content !important;
+    overflow-x: auto !important;
+  }
+
+  .nav-link {
+    flex: 0 0 54px !important;
+    width: 54px !important;
+    height: 54px !important;
+    margin: 0 !important;
+    border-radius: 18px !important;
+  }
+
+  .nav-link::after {
+    display: none !important;
+  }
+
+  .main-content {
+    padding: 0 !important;
+  }
+
+  .topbar {
+    border-radius: 18px !important;
+    display: block !important;
+  }
+
+  .top-actions {
+    margin-top: 12px !important;
+    display: flex !important;
+    overflow-x: auto !important;
+  }
+}
+
+/* =========================================================
+   SIDEBAR WITH ICON + PANEL NAME
+   Paste at the VERY BOTTOM of src/styles.css
+========================================================= */
+
+@media (min-width: 769px) {
+  .app-shell:not(.hidden) {
+    padding: 16px 18px 16px 250px !important;
+    background: #edf3fb !important;
+  }
+
+  .sidebar {
+    position: fixed !important;
+    top: 16px !important;
+    left: 16px !important;
+    bottom: 16px !important;
+    width: 215px !important;
+    height: auto !important;
+    padding: 18px 14px !important;
+    background: #071b3a !important;
+    color: #ffffff !important;
+    border-radius: 24px !important;
+    overflow-y: auto !important;
+    overflow-x: hidden !important;
+    box-shadow: 0 24px 60px rgba(15, 23, 42, 0.32) !important;
+  }
+
+  .main-content {
+    margin-left: 0 !important;
+    width: 100% !important;
+    padding: 0 !important;
+  }
+
+  /* Logo area */
+  .logo-sidebar-card {
+    width: 100% !important;
+    min-height: auto !important;
+    margin: 0 0 20px !important;
+    padding: 14px 10px !important;
+    display: grid !important;
+    place-items: center !important;
+    text-align: center !important;
+    background: rgba(255, 255, 255, 0.06) !important;
+    border: 1px solid rgba(255, 255, 255, 0.09) !important;
+    border-radius: 20px !important;
+    box-shadow: none !important;
+  }
+
+  .sidebar-logo {
+    width: 58px !important;
+    height: 58px !important;
+    max-width: 58px !important;
+    object-fit: contain !important;
+    background: #ffffff !important;
+    border-radius: 50% !important;
+    padding: 5px !important;
+    margin: 0 auto 9px !important;
+  }
+
+  .logo-sidebar-card strong {
+    display: block !important;
+    color: #ffffff !important;
+    font-size: 13px !important;
+    line-height: 1.25 !important;
+    font-weight: 900 !important;
+    text-align: center !important;
+    max-width: 100% !important;
+  }
+
+  .logo-sidebar-card span {
+    display: block !important;
+    color: #93c5fd !important;
+    font-size: 10px !important;
+    line-height: 1.25 !important;
+    margin-top: 4px !important;
+  }
+
+  /* Navigation with icon + name */
+  .sidebar nav {
+    display: grid !important;
+    gap: 8px !important;
+    padding: 0 !important;
+    margin: 0 !important;
+    background: transparent !important;
+    max-height: none !important;
+    opacity: 1 !important;
+    overflow: visible !important;
+    pointer-events: auto !important;
+  }
+
+  .nav-link {
+    width: 100% !important;
+    height: auto !important;
+    min-height: 48px !important;
+    padding: 11px 12px !important;
+    margin: 0 !important;
+    border-radius: 14px !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: flex-start !important;
+    gap: 12px !important;
+    text-align: left !important;
+    background: transparent !important;
+    color: #cbd5e1 !important;
+    border: 1px solid transparent !important;
+    font-size: 13px !important;
+    line-height: 1.2 !important;
+    font-weight: 800 !important;
+    white-space: nowrap !important;
+    overflow: hidden !important;
+  }
+
+  .nav-link::before {
+    width: 30px !important;
+    height: 30px !important;
+    min-width: 30px !important;
+    display: inline-grid !important;
+    place-items: center !important;
+    font-size: 16px !important;
+    border-radius: 10px !important;
+    background: rgba(255, 255, 255, 0.08) !important;
+    box-shadow: none !important;
+    margin: 0 !important;
+  }
+
+  .nav-link[data-page="dashboard"]::before { content: "🏠" !important; }
+  .nav-link[data-page="inventory"]::before { content: "💊" !important; }
+  .nav-link[data-page="sales"]::before { content: "🛒" !important; }
+  .nav-link[data-page="purchases"]::before { content: "📦" !important; }
+  .nav-link[data-page="suppliers"]::before { content: "🚚" !important; }
+  .nav-link[data-page="reports"]::before { content: "📊" !important; }
+  .nav-link[data-page="users"]::before { content: "👥" !important; }
+  .nav-link[data-page="backup"]::before { content: "💾" !important; }
+
+  .nav-link:hover {
+    background: rgba(59, 130, 246, 0.15) !important;
+    color: #ffffff !important;
+    transform: translateX(3px) !important;
+  }
+
+  .nav-link.active {
+    background: linear-gradient(135deg, #1d4ed8, #2563eb) !important;
+    color: #ffffff !important;
+    border-color: rgba(96, 165, 250, 0.45) !important;
+    box-shadow: 0 10px 24px rgba(37, 99, 235, 0.32) !important;
+  }
+
+  .nav-link.active::before {
+    background: rgba(255, 255, 255, 0.18) !important;
+  }
+
+  /* Remove tooltip because names are now visible */
+  .nav-link::after,
+  .nav-link:hover::after {
+    display: none !important;
+    content: none !important;
+  }
+
+  /* User/logout card */
+  .mobile-user-card {
+    width: 100% !important;
+    margin: 14px 0 0 !important;
+    padding: 12px !important;
+    border-radius: 16px !important;
+    background: rgba(255, 255, 255, 0.07) !important;
+    border: 1px solid rgba(255, 255, 255, 0.10) !important;
+    display: grid !important;
+    gap: 10px !important;
+  }
+
+  .mobile-user-card p {
+    margin: 0 !important;
+    color: #e5e7eb !important;
+    font-size: 12px !important;
+    line-height: 1.35 !important;
+    text-align: left !important;
+  }
+
+  .mobile-user-card .ghost-btn {
+    width: 100% !important;
+    min-height: 38px !important;
+    padding: 8px 10px !important;
+    font-size: 12px !important;
+    border-radius: 12px !important;
+    background: rgba(239, 68, 68, 0.14) !important;
+    color: #fecaca !important;
+    border: 1px solid rgba(248, 113, 113, 0.20) !important;
+  }
+}
+
+/* =========================================================
+   FINAL GREEN THEME + LOGO WATERMARK ON ALL APP PAGES
+   Paste at the VERY BOTTOM of src/styles.css
+========================================================= */
+
+:root {
+  --bg: #eefaf3 !important;
+  --panel: #ffffff !important;
+  --text: #0f172a !important;
+  --muted: #64748b !important;
+  --line: #cfe8d8 !important;
+
+  --primary: #15803d !important;
+  --primary-dark: #166534 !important;
+  --primary-soft: #dcfce7 !important;
+
+  --success: #15803d !important;
+  --warning: #b45309 !important;
+  --danger: #b91c1c !important;
+
+  --shadow: 0 18px 42px rgba(21, 128, 61, 0.12) !important;
+}
+
+/* Main green background */
+body {
+  background:
+    radial-gradient(circle at top left, rgba(34, 197, 94, 0.18), transparent 32%),
+    radial-gradient(circle at bottom right, rgba(20, 184, 166, 0.14), transparent 30%),
+    #eefaf3 !important;
+  color: var(--text) !important;
+}
+
+/* Logo watermark on all app pages after login */
+body.is-authenticated::before {
+  content: "" !important;
+  position: fixed !important;
+  inset: 0 !important;
+  background-image: url("../assets/budadiri-logo.png") !important;
+  background-repeat: no-repeat !important;
+  background-position: center center !important;
+  background-size: min(48vw, 520px) auto !important;
+  opacity: 0.045 !important;
+  pointer-events: none !important;
+  z-index: 0 !important;
+}
+
+/* Keep app content above watermark */
+.app-shell,
+.main-content,
+.sidebar,
+.topbar,
+.page,
+.panel,
+.stat-card,
+.modal,
+.toast {
+  position: relative !important;
+  z-index: 1 !important;
+}
+
+/* App shell background should allow watermark to show */
+.app-shell:not(.hidden) {
+  background: transparent !important;
+}
+
+/* Sidebar green style with icon + name */
+@media (min-width: 769px) {
+  .app-shell:not(.hidden) {
+    padding: 16px 18px 16px 250px !important;
+  }
+
+  .sidebar {
+    width: 215px !important;
+    background:
+      linear-gradient(180deg, #052e16 0%, #064e3b 52%, #052e16 100%) !important;
+    color: #ffffff !important;
+    border: 1px solid rgba(187, 247, 208, 0.16) !important;
+    box-shadow: 0 24px 60px rgba(5, 46, 22, 0.34) !important;
+  }
+
+  .logo-sidebar-card {
+    background: rgba(255, 255, 255, 0.08) !important;
+    border: 1px solid rgba(187, 247, 208, 0.16) !important;
+  }
+
+  .sidebar-logo {
+    background: #ffffff !important;
+    box-shadow: 0 8px 20px rgba(34, 197, 94, 0.32) !important;
+  }
+
+  .logo-sidebar-card strong {
+    color: #ffffff !important;
+  }
+
+  .logo-sidebar-card span {
+    color: #bbf7d0 !important;
+  }
+
+  .nav-link {
+    color: #d1fae5 !important;
+    background: transparent !important;
+  }
+
+  .nav-link::before {
+    background: rgba(255, 255, 255, 0.09) !important;
+  }
+
+  .nav-link:hover {
+    background: rgba(34, 197, 94, 0.16) !important;
+    color: #ffffff !important;
+  }
+
+  .nav-link.active {
+    background: linear-gradient(135deg, #15803d, #22c55e) !important;
+    color: #ffffff !important;
+    border-color: rgba(187, 247, 208, 0.45) !important;
+    box-shadow: 0 10px 24px rgba(34, 197, 94, 0.32) !important;
+  }
+
+  .nav-link.active::before {
+    background: rgba(255, 255, 255, 0.18) !important;
+  }
+
+  .mobile-user-card {
+    background: rgba(255, 255, 255, 0.08) !important;
+    border: 1px solid rgba(187, 247, 208, 0.14) !important;
+  }
+
+  .mobile-user-card p {
+    color: #dcfce7 !important;
+  }
+}
+
+/* Topbar */
+.topbar {
+  background: rgba(255, 255, 255, 0.88) !important;
+  border: 1px solid #bbf7d0 !important;
+  box-shadow: 0 14px 32px rgba(21, 128, 61, 0.10) !important;
+}
+
+.topbar h1 {
+  color: #052e16 !important;
+}
+
+.topbar p {
+  color: #64748b !important;
+}
+
+.topbar-logo {
+  border: 1px solid #bbf7d0 !important;
+  background: #f0fdf4 !important;
+}
+
+/* Login page green */
+.login-screen.login-travel-style {
+  background:
+    radial-gradient(circle at top left, rgba(255, 255, 255, 0.20), transparent 30%),
+    linear-gradient(135deg, #16a34a 0%, #15803d 48%, #064e3b 100%) !important;
+}
+
+.login-left-brand {
+  background:
+    linear-gradient(rgba(5, 46, 22, 0.35), rgba(5, 46, 22, 0.78)),
+    radial-gradient(circle at top left, rgba(187, 247, 208, 0.28), transparent 30%),
+    linear-gradient(145deg, #22c55e 0%, #15803d 50%, #064e3b 100%) !important;
+}
+
+.login-right-form h1 {
+  color: #15803d !important;
+}
+
+.login-welcome-icon {
+  color: #22c55e !important;
+}
+
+.login-welcome-icon::after {
+  border-top-color: rgba(34, 197, 94, 0.65) !important;
+}
+
+.login-right-form label {
+  color: #15803d !important;
+}
+
+.login-input-wrap {
+  border-color: #86efac !important;
+}
+
+.login-input-wrap span {
+  color: #15803d !important;
+}
+
+.login-input-wrap:focus-within {
+  border-color: #16a34a !important;
+  box-shadow: 0 0 0 3px rgba(34, 197, 94, 0.16) !important;
+}
+
+.login-main-btn,
+.login-form .primary-btn {
+  background: linear-gradient(135deg, #15803d, #22c55e) !important;
+  color: #ffffff !important;
+  box-shadow: 0 12px 24px rgba(34, 197, 94, 0.28) !important;
+}
+
+/* Panels and cards */
+.panel,
+.stat-card,
+.checkout-panel,
+.modal-card {
+  background: rgba(255, 255, 255, 0.94) !important;
+  border: 1px solid #cfe8d8 !important;
+  box-shadow: 0 18px 42px rgba(21, 128, 61, 0.08) !important;
+}
+
+.panel-header {
+  border-bottom-color: #dcfce7 !important;
+}
+
+.panel-header h2,
+.panel h3 {
+  color: #052e16 !important;
+}
+
+/* Dashboard cards */
+.stat-card {
+  border-left: 6px solid #22c55e !important;
+}
+
+.stat-card strong {
+  color: #15803d !important;
+}
+
+.stat-card.success strong {
+  color: #15803d !important;
+}
+
+.stat-card.warning strong {
+  color: #b45309 !important;
+}
+
+.stat-card.danger strong {
+  color: #b91c1c !important;
+}
+
+/* Form labels and inputs */
+label {
+  background: #dcfce7 !important;
+  color: #166534 !important;
+}
+
+input,
+select,
+textarea {
+  border: 1px solid #b7dfc3 !important;
+  background: rgba(255, 255, 255, 0.96) !important;
+}
+
+input:focus,
+select:focus,
+textarea:focus {
+  border-color: #22c55e !important;
+  box-shadow: 0 0 0 4px rgba(34, 197, 94, 0.14) !important;
+}
+
+/* Buttons */
+.primary-btn {
+  background: linear-gradient(135deg, #15803d, #22c55e) !important;
+  color: #ffffff !important;
+  box-shadow: 0 12px 24px rgba(34, 197, 94, 0.26) !important;
+}
+
+.primary-btn:hover {
+  background: linear-gradient(135deg, #166534, #16a34a) !important;
+}
+
+.secondary-btn {
+  background: #dcfce7 !important;
+  color: #166534 !important;
+  border: 1px solid #86efac !important;
+}
+
+.ghost-btn {
+  background: #f0fdf4 !important;
+  color: #166534 !important;
+  border: 1px solid #bbf7d0 !important;
+}
+
+.file-btn {
+  background: #ecfdf5 !important;
+  color: #047857 !important;
+  border: 1px solid #a7f3d0 !important;
+}
+
+.table-btn {
+  background: #dcfce7 !important;
+  color: #166534 !important;
+}
+
+/* Tables */
+.table-wrap {
+  border-color: #cfe8d8 !important;
+}
+
+thead th,
+th {
+  background: linear-gradient(135deg, #166534, #15803d) !important;
+  color: #ffffff !important;
+}
+
+tbody tr:hover td,
+tbody tr:hover {
+  background: #f0fdf4 !important;
+}
+
+/* Badges */
+.badge.success {
+  background: #dcfce7 !important;
+  color: #166534 !important;
+}
+
+.badge.info {
+  background: #dbeafe !important;
+  color: #1d4ed8 !important;
+}
+
+/* Checkout */
+.checkout-panel {
+  background:
+    linear-gradient(135deg, #052e16, #15803d) !important;
+  color: #ffffff !important;
+}
+
+.checkout-panel h3,
+.checkout-panel p,
+.checkout-panel span,
+.checkout-panel strong,
+.checkout-line.total strong {
+  color: #ffffff !important;
+}
+
+/* Dashboard medicine search */
+.dashboard-search-panel {
+  background:
+    linear-gradient(135deg, rgba(255, 255, 255, 0.96), rgba(240, 253, 244, 0.96)) !important;
+  border: 1px solid #bbf7d0 !important;
+}
+
+.price-search-item {
+  border: 1px solid #bbf7d0 !important;
+  background: rgba(255, 255, 255, 0.95) !important;
+}
+
+.price-search-item strong {
+  color: #15803d !important;
+}
+
+/* Floating sync button */
+.floating-sync-btn {
+  background: linear-gradient(135deg, #15803d, #22c55e) !important;
+  color: #ffffff !important;
+  box-shadow: 0 14px 34px rgba(34, 197, 94, 0.32) !important;
+}
+
+/* Receipt and reports green */
+.receipt-brand-header {
+  border-bottom-color: #15803d !important;
+}
+
+.receipt-brand-header h2,
+.receipt-title,
+.receipt-footer-note {
+  color: #166534 !important;
+}
+
+.receipt-brand-header p {
+  color: #15803d !important;
+}
+
+.receipt-content thead th {
+  background: linear-gradient(135deg, #166534, #15803d) !important;
+}
+
+.receipt-total-line.grand {
+  border-top-color: #15803d !important;
+  color: #15803d !important;
+}
+
+.report-logo-line {
+  border-bottom-color: #15803d !important;
+}
+
+.report-logo-line h1 {
+  color: #166534 !important;
+}
+
+.report-logo-line p {
+  color: #15803d !important;
+}
+
+/* Mobile green bottom sidebar */
+@media (max-width: 768px) {
+  .app-shell:not(.hidden) {
+    background: transparent !important;
+  }
+
+  .sidebar {
+    background:
+      linear-gradient(135deg, #052e16, #064e3b) !important;
+    border: 1px solid rgba(187, 247, 208, 0.16) !important;
+  }
+
+  .nav-link {
+    color: #bbf7d0 !important;
+  }
+
+  .nav-link.active {
+    background: linear-gradient(135deg, #15803d, #22c55e) !important;
+    color: #ffffff !important;
+  }
+
+  .topbar {
+    background: rgba(255, 255, 255, 0.90) !important;
+  }
+}
+
+/* Make watermark lighter during print */
+@media print {
+  body.is-authenticated::before {
+    opacity: 0.025 !important;
+  }
+}
+
+/* =========================================================
+   FINAL PURPLE THEME + FIX SIDEBAR POSITION + BIG LOGO
+   Paste at the VERY BOTTOM of src/styles.css
+========================================================= */
+
+:root {
+  --bg: #f6f0ff !important;
+  --panel: #ffffff !important;
+  --text: #1e1b4b !important;
+  --muted: #6b647a !important;
+  --line: #ddd6fe !important;
+
+  --primary: #7c3aed !important;
+  --primary-dark: #5b21b6 !important;
+  --primary-soft: #ede9fe !important;
+
+  --success: #16a34a !important;
+  --warning: #b45309 !important;
+  --danger: #b91c1c !important;
+
+  --shadow: 0 18px 42px rgba(91, 33, 182, 0.14) !important;
+}
+
+/* General purple background */
+body {
+  background:
+    radial-gradient(circle at top left, rgba(124, 58, 237, 0.16), transparent 32%),
+    radial-gradient(circle at bottom right, rgba(168, 85, 247, 0.14), transparent 30%),
+    #f6f0ff !important;
+  color: var(--text) !important;
+}
+
+/* Logo watermark on all app pages */
+body.is-authenticated::before {
+  content: "" !important;
+  position: fixed !important;
+  inset: 0 !important;
+  background-image: url("../assets/budadiri-logo.png") !important;
+  background-repeat: no-repeat !important;
+  background-position: center center !important;
+  background-size: min(48vw, 520px) auto !important;
+  opacity: 0.045 !important;
+  pointer-events: none !important;
+  z-index: 0 !important;
+}
+
+.app-shell,
+.main-content,
+.sidebar,
+.topbar,
+.page,
+.panel,
+.stat-card,
+.modal,
+.toast {
+  position: relative !important;
+  z-index: 1 !important;
+}
+
+.app-shell:not(.hidden) {
+  background: transparent !important;
+}
+
+/* =========================================================
+   SIDEBAR FIX: LOWER POSITION + PURPLE STYLE + BIGGER LOGO
+========================================================= */
+
+@media (min-width: 769px) {
+  .app-shell:not(.hidden) {
+    padding: 22px 22px 22px 270px !important;
+  }
+
+  .sidebar {
+    position: fixed !important;
+    top: 22px !important;
+    left: 22px !important;
+    bottom: 22px !important;
+    width: 225px !important;
+    height: calc(100vh - 44px) !important;
+    padding: 20px 14px !important;
+    background:
+      linear-gradient(180deg, #2e1065 0%, #4c1d95 52%, #2e1065 100%) !important;
+    color: #ffffff !important;
+    border-radius: 28px !important;
+    border: 1px solid rgba(221, 214, 254, 0.18) !important;
+    box-shadow: 0 24px 60px rgba(46, 16, 101, 0.36) !important;
+    overflow-y: auto !important;
+    overflow-x: hidden !important;
+    z-index: 1000 !important;
+  }
+
+  .main-content {
+    margin-left: 0 !important;
+    width: 100% !important;
+    padding: 0 !important;
+  }
+
+  /* Bigger logo section */
+  .logo-sidebar-card {
+    width: 100% !important;
+    min-height: auto !important;
+    margin: 0 0 22px !important;
+    padding: 18px 12px !important;
+    display: grid !important;
+    place-items: center !important;
+    text-align: center !important;
+    background: rgba(255, 255, 255, 0.10) !important;
+    border: 1px solid rgba(221, 214, 254, 0.20) !important;
+    border-radius: 24px !important;
+    box-shadow: none !important;
+  }
+
+  .sidebar-logo {
+    width: 92px !important;
+    height: 92px !important;
+    max-width: 92px !important;
+    object-fit: contain !important;
+    background: #ffffff !important;
+    border-radius: 50% !important;
+    padding: 8px !important;
+    margin: 0 auto 12px !important;
+    box-shadow: 0 12px 28px rgba(168, 85, 247, 0.36) !important;
+  }
+
+  .logo-sidebar-card strong {
+    display: block !important;
+    color: #ffffff !important;
+    font-size: 15px !important;
+    line-height: 1.25 !important;
+    font-weight: 900 !important;
+    text-align: center !important;
+    max-width: 100% !important;
+  }
+
+  .logo-sidebar-card span {
+    display: block !important;
+    color: #ddd6fe !important;
+    font-size: 11px !important;
+    line-height: 1.3 !important;
+    margin-top: 5px !important;
+  }
+
+  /* Icon + panel name */
+  .sidebar nav {
+    display: grid !important;
+    gap: 9px !important;
+    padding: 0 !important;
+    margin: 0 !important;
+    background: transparent !important;
+    max-height: none !important;
+    opacity: 1 !important;
+    overflow: visible !important;
+    pointer-events: auto !important;
+  }
+
+  .nav-link {
+    width: 100% !important;
+    height: auto !important;
+    min-height: 50px !important;
+    padding: 11px 12px !important;
+    margin: 0 !important;
+    border-radius: 16px !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: flex-start !important;
+    gap: 12px !important;
+    text-align: left !important;
+    background: transparent !important;
+    color: #ede9fe !important;
+    border: 1px solid transparent !important;
+    font-size: 13px !important;
+    line-height: 1.2 !important;
+    font-weight: 850 !important;
+    white-space: nowrap !important;
+  }
+
+  .nav-link::before {
+    width: 32px !important;
+    height: 32px !important;
+    min-width: 32px !important;
+    display: inline-grid !important;
+    place-items: center !important;
+    font-size: 16px !important;
+    border-radius: 11px !important;
+    background: rgba(255, 255, 255, 0.12) !important;
+    box-shadow: none !important;
+    margin: 0 !important;
+  }
+
+  .nav-link[data-page="dashboard"]::before { content: "🏠" !important; }
+  .nav-link[data-page="inventory"]::before { content: "💊" !important; }
+  .nav-link[data-page="sales"]::before { content: "🛒" !important; }
+  .nav-link[data-page="purchases"]::before { content: "📦" !important; }
+  .nav-link[data-page="suppliers"]::before { content: "🚚" !important; }
+  .nav-link[data-page="reports"]::before { content: "📊" !important; }
+  .nav-link[data-page="users"]::before { content: "👥" !important; }
+  .nav-link[data-page="backup"]::before { content: "💾" !important; }
+
+  .nav-link:hover {
+    background: rgba(168, 85, 247, 0.24) !important;
+    color: #ffffff !important;
+    transform: translateX(3px) !important;
+  }
+
+  .nav-link.active {
+    background: linear-gradient(135deg, #7c3aed, #a855f7) !important;
+    color: #ffffff !important;
+    border-color: rgba(221, 214, 254, 0.45) !important;
+    box-shadow: 0 10px 24px rgba(168, 85, 247, 0.34) !important;
+  }
+
+  .nav-link.active::before {
+    background: rgba(255, 255, 255, 0.20) !important;
+  }
+
+  .nav-link::after,
+  .nav-link:hover::after {
+    display: none !important;
+    content: none !important;
+  }
+
+  /* User card */
+  .mobile-user-card {
+    width: 100% !important;
+    margin: 16px 0 0 !important;
+    padding: 13px !important;
+    border-radius: 18px !important;
+    background: rgba(255, 255, 255, 0.10) !important;
+    border: 1px solid rgba(221, 214, 254, 0.16) !important;
+    display: grid !important;
+    gap: 10px !important;
+  }
+
+  .mobile-user-card p {
+    margin: 0 !important;
+    color: #f5f3ff !important;
+    font-size: 12px !important;
+    line-height: 1.35 !important;
+    text-align: left !important;
+  }
+
+  .mobile-user-card .ghost-btn {
+    width: 100% !important;
+    min-height: 38px !important;
+    padding: 8px 10px !important;
+    font-size: 12px !important;
+    border-radius: 13px !important;
+    background: rgba(239, 68, 68, 0.15) !important;
+    color: #fecaca !important;
+    border: 1px solid rgba(248, 113, 113, 0.22) !important;
+  }
+}
+
+/* =========================================================
+   PURPLE TOPBAR, PANELS, FORMS, BUTTONS
+========================================================= */
+
+.topbar {
+  background: rgba(255, 255, 255, 0.90) !important;
+  border: 1px solid #ddd6fe !important;
+  box-shadow: 0 14px 32px rgba(91, 33, 182, 0.10) !important;
+}
+
+.topbar h1 {
+  color: #2e1065 !important;
+}
+
+.topbar p {
+  color: #6b647a !important;
+}
+
+.topbar-logo {
+  border: 1px solid #ddd6fe !important;
+  background: #f5f3ff !important;
+}
+
+.panel,
+.stat-card,
+.checkout-panel,
+.modal-card {
+  background: rgba(255, 255, 255, 0.94) !important;
+  border: 1px solid #ddd6fe !important;
+  box-shadow: 0 18px 42px rgba(91, 33, 182, 0.08) !important;
+}
+
+.panel-header {
+  border-bottom-color: #ede9fe !important;
+}
+
+.panel-header h2,
+.panel h3 {
+  color: #2e1065 !important;
+}
+
+.stat-card {
+  border-left: 6px solid #a855f7 !important;
+}
+
+.stat-card strong {
+  color: #7c3aed !important;
+}
+
+label {
+  background: #ede9fe !important;
+  color: #5b21b6 !important;
+}
+
+input,
+select,
+textarea {
+  border: 1px solid #c4b5fd !important;
+  background: rgba(255, 255, 255, 0.96) !important;
+}
+
+input:focus,
+select:focus,
+textarea:focus {
+  border-color: #a855f7 !important;
+  box-shadow: 0 0 0 4px rgba(168, 85, 247, 0.14) !important;
+}
+
+.primary-btn {
+  background: linear-gradient(135deg, #7c3aed, #a855f7) !important;
+  color: #ffffff !important;
+  box-shadow: 0 12px 24px rgba(168, 85, 247, 0.28) !important;
+}
+
+.primary-btn:hover {
+  background: linear-gradient(135deg, #5b21b6, #7c3aed) !important;
+}
+
+.secondary-btn {
+  background: #ede9fe !important;
+  color: #5b21b6 !important;
+  border: 1px solid #c4b5fd !important;
+}
+
+.ghost-btn {
+  background: #f5f3ff !important;
+  color: #5b21b6 !important;
+  border: 1px solid #ddd6fe !important;
+}
+
+.file-btn {
+  background: #f3e8ff !important;
+  color: #7e22ce !important;
+  border: 1px solid #d8b4fe !important;
+}
+
+.table-btn {
+  background: #ede9fe !important;
+  color: #5b21b6 !important;
+}
+
+thead th,
+th {
+  background: linear-gradient(135deg, #4c1d95, #7c3aed) !important;
+  color: #ffffff !important;
+}
+
+tbody tr:hover td,
+tbody tr:hover {
+  background: #f5f3ff !important;
+}
+
+.checkout-panel {
+  background:
+    linear-gradient(135deg, #2e1065, #7c3aed) !important;
+  color: #ffffff !important;
+}
+
+.checkout-panel h3,
+.checkout-panel p,
+.checkout-panel span,
+.checkout-panel strong,
+.checkout-line.total strong {
+  color: #ffffff !important;
+}
+
+.dashboard-search-panel {
+  background:
+    linear-gradient(135deg, rgba(255, 255, 255, 0.96), rgba(245, 243, 255, 0.96)) !important;
+  border: 1px solid #ddd6fe !important;
+}
+
+.price-search-item {
+  border: 1px solid #ddd6fe !important;
+  background: rgba(255, 255, 255, 0.95) !important;
+}
+
+.price-search-item strong {
+  color: #7c3aed !important;
+}
+
+.floating-sync-btn {
+  background: linear-gradient(135deg, #7c3aed, #a855f7) !important;
+  color: #ffffff !important;
+  box-shadow: 0 14px 34px rgba(168, 85, 247, 0.34) !important;
+}
+
+/* Login page purple */
+.login-screen.login-travel-style {
+  background:
+    radial-gradient(circle at top left, rgba(255, 255, 255, 0.22), transparent 30%),
+    linear-gradient(135deg, #7c3aed 0%, #5b21b6 48%, #2e1065 100%) !important;
+}
+
+.login-left-brand {
+  background:
+    linear-gradient(rgba(46, 16, 101, 0.38), rgba(46, 16, 101, 0.80)),
+    radial-gradient(circle at top left, rgba(221, 214, 254, 0.30), transparent 30%),
+    linear-gradient(145deg, #a855f7 0%, #7c3aed 50%, #2e1065 100%) !important;
+}
+
+.login-right-form h1,
+.login-right-form label,
+.login-welcome-icon,
+.login-input-wrap span {
+  color: #7c3aed !important;
+}
+
+.login-welcome-icon::after {
+  border-top-color: rgba(124, 58, 237, 0.65) !important;
+}
+
+.login-input-wrap {
+  border-color: #c4b5fd !important;
+}
+
+.login-input-wrap:focus-within {
+  border-color: #a855f7 !important;
+  box-shadow: 0 0 0 3px rgba(168, 85, 247, 0.16) !important;
+}
+
+.login-main-btn,
+.login-form .primary-btn {
+  background: linear-gradient(135deg, #7c3aed, #a855f7) !important;
+  color: #ffffff !important;
+}
+
+/* Mobile purple */
+@media (max-width: 768px) {
+  .app-shell:not(.hidden) {
+    background: transparent !important;
+  }
+
+  .sidebar {
+    background:
+      linear-gradient(135deg, #2e1065, #4c1d95) !important;
+    border: 1px solid rgba(221, 214, 254, 0.16) !important;
+  }
+
+  .nav-link {
+    color: #ddd6fe !important;
+  }
+
+  .nav-link.active {
+    background: linear-gradient(135deg, #7c3aed, #a855f7) !important;
+    color: #ffffff !important;
+  }
+
+  .topbar {
+    background: rgba(255, 255, 255, 0.90) !important;
+  }
+}
+
+/* =========================================================
+   FIX SYNC / TOAST NOTIFICATION POSITION
+   Paste at the VERY BOTTOM of src/styles.css
+========================================================= */
+
+.toast {
+  position: fixed !important;
+  top: auto !important;
+  right: 24px !important;
+  bottom: 28px !important;
+  left: auto !important;
+  z-index: 99999 !important;
+
+  max-width: 360px !important;
+  width: auto !important;
+
+  background: linear-gradient(135deg, #4c1d95, #7c3aed) !important;
+  color: #ffffff !important;
+  padding: 14px 18px !important;
+  border-radius: 18px !important;
+  font-size: 14px !important;
+  font-weight: 800 !important;
+  line-height: 1.4 !important;
+
+  box-shadow: 0 18px 45px rgba(76, 29, 149, 0.35) !important;
+  opacity: 0 !important;
+  transform: translateY(18px) !important;
+  pointer-events: none !important;
+  transition: 0.25s ease !important;
+}
+
+.toast.show {
+  opacity: 1 !important;
+  transform: translateY(0) !important;
+}
+
+/* Mobile: place notification above bottom sidebar and sync button */
+@media (max-width: 768px) {
+  .toast {
+    left: 14px !important;
+    right: 14px !important;
+    bottom: 100px !important;
+    max-width: none !important;
+    width: auto !important;
+    text-align: center !important;
+    z-index: 99999 !important;
+  }
+}
