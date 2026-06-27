@@ -2609,3 +2609,534 @@ body.is-authenticated .floating-sync-btn {
     display: none !important;
   }
 }
+
+
+
+
+
+
+/* =========================================================
+   NEW INTERFACE THEME: WARM RETAIL POS STYLE
+   Same functionality, different visual appearance
+   Paste at the VERY BOTTOM of src/styles.css
+========================================================= */
+
+:root {
+  --bg: #fff8ed !important;
+  --panel: #ffffff !important;
+  --text: #1f2933 !important;
+  --muted: #6b7280 !important;
+  --line: #eadcc8 !important;
+
+  --primary: #c2410c !important;
+  --primary-dark: #9a3412 !important;
+  --primary-soft: #ffedd5 !important;
+
+  --success: #047857 !important;
+  --warning: #b45309 !important;
+  --danger: #b91c1c !important;
+
+  --shadow: 0 18px 38px rgba(120, 53, 15, 0.10) !important;
+  --radius: 18px !important;
+}
+
+/* Main background */
+body {
+  background:
+    radial-gradient(circle at top left, rgba(251, 146, 60, 0.20), transparent 28%),
+    radial-gradient(circle at bottom right, rgba(20, 184, 166, 0.14), transparent 30%),
+    #fff8ed !important;
+  color: #1f2933 !important;
+  font-family: "Segoe UI", Arial, sans-serif !important;
+}
+
+/* Login page */
+.login-screen {
+  background:
+    linear-gradient(135deg, rgba(124, 45, 18, 0.92), rgba(194, 65, 12, 0.86)),
+    radial-gradient(circle at top right, rgba(255, 237, 213, 0.30), transparent 32%) !important;
+}
+
+.login-card {
+  border-radius: 30px !important;
+  border: 1px solid rgba(255, 237, 213, 0.8) !important;
+  background: rgba(255, 255, 255, 0.96) !important;
+  box-shadow: 0 28px 70px rgba(67, 20, 7, 0.28) !important;
+}
+
+.login-card h1 {
+  color: #7c2d12 !important;
+  font-weight: 950 !important;
+  letter-spacing: -0.04em !important;
+}
+
+.login-logo {
+  background: #fff7ed !important;
+  border-radius: 22px !important;
+  padding: 8px !important;
+  box-shadow: 0 10px 26px rgba(120, 53, 15, 0.16) !important;
+}
+
+/* App layout */
+.app-shell:not(.hidden) {
+  background: transparent !important;
+}
+
+/* New sidebar: light retail dashboard look */
+.sidebar {
+  background: #ffffff !important;
+  color: #1f2933 !important;
+  border-right: 1px solid #eadcc8 !important;
+  box-shadow: 10px 0 35px rgba(120, 53, 15, 0.08) !important;
+}
+
+/* Sidebar brand card */
+.logo-sidebar-card {
+  background:
+    linear-gradient(135deg, #fff7ed, #ffffff) !important;
+  border: 1px solid #fed7aa !important;
+  box-shadow: 0 14px 30px rgba(194, 65, 12, 0.12) !important;
+  border-radius: 24px !important;
+}
+
+.logo-sidebar-card strong {
+  color: #9a3412 !important;
+}
+
+.logo-sidebar-card span {
+  color: #047857 !important;
+  font-weight: 800 !important;
+}
+
+.sidebar-logo {
+  border-radius: 18px !important;
+}
+
+/* Navigation buttons */
+.nav-link {
+  color: #374151 !important;
+  background: transparent !important;
+  border: 1px solid transparent !important;
+  border-radius: 18px !important;
+  font-weight: 850 !important;
+  padding: 13px 14px !important;
+  margin-bottom: 8px !important;
+  transition: all 0.22s ease !important;
+}
+
+.nav-link::before {
+  box-shadow: none !important;
+}
+
+.nav-link:hover {
+  transform: translateX(4px) !important;
+  background: #fff7ed !important;
+  color: #9a3412 !important;
+  border-color: #fed7aa !important;
+}
+
+.nav-link.active {
+  color: #ffffff !important;
+  background: linear-gradient(135deg, #c2410c, #f97316) !important;
+  border-color: #fdba74 !important;
+  box-shadow: 0 12px 26px rgba(194, 65, 12, 0.28) !important;
+}
+
+.nav-link.active::after {
+  background: #22c55e !important;
+}
+
+/* Topbar */
+.topbar {
+  background:
+    linear-gradient(135deg, rgba(255, 255, 255, 0.96), rgba(255, 247, 237, 0.94)) !important;
+  border: 1px solid #fed7aa !important;
+  border-radius: 28px !important;
+  box-shadow: 0 16px 38px rgba(120, 53, 15, 0.10) !important;
+  padding: 18px 20px !important;
+}
+
+.topbar h1 {
+  color: #7c2d12 !important;
+  font-weight: 950 !important;
+}
+
+.topbar p {
+  color: #78716c !important;
+}
+
+.topbar-logo {
+  background: #fff7ed !important;
+  border: 1px solid #fed7aa !important;
+  box-shadow: 0 10px 24px rgba(194, 65, 12, 0.14) !important;
+}
+
+/* Panels and cards */
+.panel,
+.stat-card,
+.checkout-panel,
+.modal-card {
+  background: rgba(255, 255, 255, 0.96) !important;
+  border: 1px solid #eadcc8 !important;
+  border-radius: 26px !important;
+  box-shadow: 0 18px 38px rgba(120, 53, 15, 0.08) !important;
+  backdrop-filter: none !important;
+}
+
+.panel-header h2,
+.panel h3 {
+  color: #7c2d12 !important;
+  font-weight: 950 !important;
+}
+
+.panel-header p,
+.muted {
+  color: #78716c !important;
+}
+
+/* Stat cards */
+.stat-card {
+  position: relative !important;
+  overflow: hidden !important;
+  border-left: 6px solid #f97316 !important;
+}
+
+.stat-card::after {
+  background: rgba(251, 146, 60, 0.12) !important;
+}
+
+.stat-card span {
+  color: #78716c !important;
+  font-weight: 850 !important;
+}
+
+.stat-card strong {
+  color: #c2410c !important;
+  font-weight: 950 !important;
+}
+
+.stat-card.success {
+  border-left-color: #047857 !important;
+}
+
+.stat-card.success strong {
+  color: #047857 !important;
+}
+
+.stat-card.warning {
+  border-left-color: #d97706 !important;
+}
+
+.stat-card.warning strong {
+  color: #d97706 !important;
+}
+
+.stat-card.danger {
+  border-left-color: #dc2626 !important;
+}
+
+.stat-card.danger strong {
+  color: #dc2626 !important;
+}
+
+/* Forms */
+label {
+  color: #7c2d12 !important;
+  font-weight: 850 !important;
+}
+
+input,
+select,
+textarea {
+  background: #fffaf4 !important;
+  border: 1px solid #e7c9a9 !important;
+  border-radius: 16px !important;
+  color: #1f2933 !important;
+}
+
+input:focus,
+select:focus,
+textarea:focus {
+  border-color: #f97316 !important;
+  box-shadow: 0 0 0 4px rgba(249, 115, 22, 0.14) !important;
+}
+
+/* Buttons */
+.primary-btn {
+  background: linear-gradient(135deg, #c2410c, #f97316) !important;
+  color: #ffffff !important;
+  border: none !important;
+  box-shadow: 0 12px 24px rgba(194, 65, 12, 0.26) !important;
+  border-radius: 16px !important;
+}
+
+.primary-btn:hover {
+  background: linear-gradient(135deg, #9a3412, #ea580c) !important;
+}
+
+.secondary-btn {
+  background: #ffedd5 !important;
+  color: #9a3412 !important;
+  border: 1px solid #fed7aa !important;
+  border-radius: 16px !important;
+}
+
+.ghost-btn {
+  background: #f5f5f4 !important;
+  color: #374151 !important;
+  border: 1px solid #e7e5e4 !important;
+  border-radius: 16px !important;
+}
+
+.danger-btn,
+.table-btn.danger {
+  background: #fee2e2 !important;
+  color: #991b1b !important;
+}
+
+/* Tables */
+.table-wrap {
+  border: 1px solid #eadcc8 !important;
+  border-radius: 20px !important;
+  background: #ffffff !important;
+}
+
+table {
+  background: #ffffff !important;
+}
+
+thead th,
+th {
+  background: linear-gradient(135deg, #7c2d12, #c2410c) !important;
+  color: #ffffff !important;
+  font-weight: 900 !important;
+}
+
+td {
+  border-bottom: 1px solid #f1e4d4 !important;
+}
+
+tbody tr:nth-child(even) {
+  background: #fffaf4 !important;
+}
+
+tbody tr:hover {
+  background: #ffedd5 !important;
+}
+
+/* Badges */
+.badge {
+  border-radius: 999px !important;
+  font-weight: 900 !important;
+}
+
+.badge.info {
+  background: #dbeafe !important;
+  color: #1d4ed8 !important;
+}
+
+.badge.success {
+  background: #d1fae5 !important;
+  color: #047857 !important;
+}
+
+.badge.warning {
+  background: #fef3c7 !important;
+  color: #b45309 !important;
+}
+
+.badge.danger {
+  background: #fee2e2 !important;
+  color: #991b1b !important;
+}
+
+/* Dashboard medicine price search */
+.dashboard-search-panel {
+  background:
+    linear-gradient(135deg, #fff7ed, #ffffff) !important;
+  border: 1px solid #fed7aa !important;
+}
+
+.price-search-item {
+  background: #fffaf4 !important;
+  border: 1px solid #fed7aa !important;
+  border-radius: 18px !important;
+}
+
+.price-search-item strong {
+  color: #c2410c !important;
+}
+
+/* Alerts */
+.alert-item {
+  background: #fffaf4 !important;
+  border: 1px solid #eadcc8 !important;
+  border-radius: 18px !important;
+}
+
+/* Checkout panel */
+.checkout-panel {
+  border-top: 6px solid #f97316 !important;
+}
+
+.checkout-line.total strong {
+  color: #c2410c !important;
+}
+
+/* Modal */
+.modal {
+  background: rgba(67, 20, 7, 0.58) !important;
+}
+
+.modal-card {
+  border: 1px solid #fed7aa !important;
+}
+
+/* Toast */
+.toast {
+  background: #7c2d12 !important;
+  color: #ffffff !important;
+  border-radius: 16px !important;
+}
+
+/* Floating sync button */
+.floating-sync-btn {
+  background: linear-gradient(135deg, #047857, #10b981) !important;
+  color: #ffffff !important;
+  box-shadow: 0 14px 34px rgba(4, 120, 87, 0.32) !important;
+}
+
+/* Receipt and report branding stays clean but new color */
+.receipt-brand-header {
+  border-bottom-color: #c2410c !important;
+}
+
+.receipt-brand-header h2,
+.receipt-title,
+.receipt-footer-note {
+  color: #9a3412 !important;
+}
+
+.receipt-brand-header p {
+  color: #047857 !important;
+}
+
+.receipt-content thead th {
+  background: linear-gradient(135deg, #7c2d12, #c2410c) !important;
+}
+
+.receipt-total-line.grand {
+  border-top-color: #c2410c !important;
+  color: #c2410c !important;
+}
+
+.report-logo-line {
+  border-bottom-color: #c2410c !important;
+}
+
+.report-logo-line h1 {
+  color: #9a3412 !important;
+}
+
+.report-logo-line p {
+  color: #047857 !important;
+}
+
+/* Mobile: different from previous app */
+@media (max-width: 768px) {
+  body {
+    background: #fff8ed !important;
+  }
+
+  .sidebar {
+    background: #ffffff !important;
+    border-bottom: 1px solid #fed7aa !important;
+    box-shadow: 0 8px 28px rgba(120, 53, 15, 0.12) !important;
+  }
+
+  .logo-sidebar-card {
+    background: #fff7ed !important;
+    border-radius: 0 !important;
+    border: none !important;
+    border-bottom: 1px solid #fed7aa !important;
+    box-shadow: none !important;
+  }
+
+  .logo-sidebar-card::after {
+    color: #c2410c !important;
+  }
+
+  .sidebar.mobile-menu-open .logo-sidebar-card::after {
+    color: #047857 !important;
+  }
+
+  .sidebar nav {
+    background: #fff7ed !important;
+  }
+
+  .sidebar.mobile-menu-open nav {
+    background: #fff7ed !important;
+  }
+
+  .nav-link {
+    background: #ffffff !important;
+    color: #374151 !important;
+    border: 1px solid #fed7aa !important;
+    border-radius: 18px !important;
+  }
+
+  .nav-link.active {
+    color: #ffffff !important;
+    background: linear-gradient(135deg, #c2410c, #f97316) !important;
+  }
+
+  .mobile-user-card {
+    background: #ffffff !important;
+    border: 1px solid #fed7aa !important;
+  }
+
+  .mobile-user-card p {
+    color: #7c2d12 !important;
+  }
+
+  .topbar {
+    display: none !important;
+  }
+
+  .main-content {
+    padding: 14px !important;
+  }
+
+  .panel,
+  .stat-card,
+  .checkout-panel {
+    border-radius: 22px !important;
+  }
+
+  .cards-grid {
+    gap: 12px !important;
+  }
+
+  .stat-card {
+    padding: 16px !important;
+  }
+
+  .floating-sync-btn {
+    background: linear-gradient(135deg, #c2410c, #f97316) !important;
+  }
+}
+
+/* Small mobile */
+@media (max-width: 430px) {
+  .panel {
+    padding: 15px !important;
+  }
+
+  .stat-card strong {
+    font-size: 23px !important;
+  }
+
+  .nav-link {
+    font-size: 13px !important;
+  }
+}

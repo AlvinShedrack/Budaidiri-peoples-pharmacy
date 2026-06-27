@@ -1,4 +1,4 @@
-const CACHE_NAME = "budadiri-pharm-cache-v1";
+const CACHE_NAME = "budadiri-pharm-cache-v2";
 
 const FILES_TO_CACHE = [
   "./",
