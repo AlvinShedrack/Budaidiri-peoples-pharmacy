@@ -1,4 +1,4 @@
-const DB_NAME = "jericho_pharmacy_db";
+const DB_NAME = "budadiri_pharmacy_db";
 const DB_VERSION = 2;
 
 const DB_STORES = [

@@ -1,4 +1,4 @@
-const CACHE_NAME = "my-rx-cache-v8";
+const CACHE_NAME = "budadiri-pharm-cache-v1";
 
 const FILES_TO_CACHE = [
   "./",

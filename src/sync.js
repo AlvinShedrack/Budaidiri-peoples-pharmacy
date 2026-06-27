@@ -1,5 +1,5 @@
-const SUPABASE_URL = "https://rorqfxjnupdnqzcozeut.supabase.co";
-const SUPABASE_KEY = "sb_publishable_ZCCvcvPKoSDuY4JpRgwghw_Wt35MjBx";
+const SUPABASE_URL = "https://dvbbtublihsnmxapdycg.supabase.co";
+const SUPABASE_KEY = "sb_publishable_5gqvI9z-WFtiXOMo7GSOPw_AqlBLuDs";
 
 const cloudClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
@@ -13,8 +13,8 @@ const SYNC_STORES = [
   "auditLogs"
 ];
 
-const DEVICE_ID_KEY = "jericho_device_id";
-const LAST_SYNC_KEY = "jericho_last_sync";
+const DEVICE_ID_KEY = "Pharmacy_device_id";
+const LAST_SYNC_KEY = "Pharmacy_last_sync";
 
 function getDeviceId() {
   let deviceId = localStorage.getItem(DEVICE_ID_KEY);

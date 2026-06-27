@@ -8,7 +8,7 @@ const STORE = {
   auditLogs: "auditLogs"
 };
 
-const SESSION_KEY = "my_rx_session_user";
+const SESSION_KEY = "budadiri_pharm_session_user";
 let currentUser = null;
 let cart = [];
 let purchaseLines = [];
@@ -16,9 +16,9 @@ let currentReceiptSale = null;
 let deferredInstallPrompt = null;
 
 const BRAND = {
-  name: "Jericho First Aid Drug Shop",
+  name: "Budadiri People's Pharmacy",
   tagline: "caring passionately for your health and drug needs",
-  receiptTagline: "Thank you for choosing Jericho First Aid Drug Shop.",
+  receiptTagline: "Thank you for choosing Budadiri People's Pharmacy.",
   logo: "./assets/budadiri-logo.png",
   address: "Located at: Wagagai Hotel, Budadiri Town Council",
   phone: "0704-180 237 / 0786-403 301",
@@ -206,7 +206,7 @@ async function seedInitialData() {
   if (!users.length) {
     await addRecord(STORE.users, {
       name: "System Administrator",
-      email: "admin@jericho.com",
+      email: "admin@budadiri.com",
       passwordHash: simpleHash("admin123"),
       role: "Administrator",
       isActive: true,
@@ -215,7 +215,7 @@ async function seedInitialData() {
 
     await addRecord(STORE.users, {
       name: "Main Dispenser",
-      email: "dispenser@jericho.com",
+      email: "dispenser@budadiri.com",
       passwordHash: simpleHash("disp123"),
       role: "Dispenser",
       isActive: true,
@@ -224,7 +224,7 @@ async function seedInitialData() {
 
     await addRecord(STORE.users, {
       name: "Director",
-      email: "director@jericho.com",
+      email: "director@budadiri.com",
       passwordHash: simpleHash("director123"),
       role: "Director",
       isActive: true,
