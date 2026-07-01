@@ -62,6 +62,17 @@
         <img src="./assets/budadiri-logo.png" alt="Budadiri People's Pharmacy" class="sidebar-logo" />
         
         <span>Where Healing Starts and God does the rest</span>
+        <button
+          type="button"
+          id="mobileMenuBtn"
+          class="mobile-menu-btn no-print"
+          aria-label="Open menu"
+          aria-expanded="false"
+        >
+          <span></span>
+          <span></span>
+          <span></span>
+        </button>
       </div>
 
       <nav>
@@ -93,7 +104,7 @@
         </div>
         <div class="top-actions">
           <button id="installBtn" class="secondary-btn hidden">Install App</button>
-          <button type="button" class="secondary-btn sync-now-btn no-print">Sync Now</button>
+          <button type="button" class="secondary-btn sync-now-btn no-print">🔄 Sync</button>
           <button id="printPageBtn" class="secondary-btn no-print">Print / Export PDF</button>
         </div>
       </header>
@@ -545,7 +556,7 @@
               <input id="importBackupInput" type="file" accept=".json,application/json" />
             </label>
 
-            <button id="syncNowBtn" class="secondary-btn sync-now-btn">Sync Now</button>
+            <button id="syncNowBtn" class="secondary-btn sync-now-btn">🔄 Sync</button>
           </div>
 
           <div class="warning-box">
@@ -650,11 +661,8 @@
   <footer class="app-footer">Developed by Alvin Shedrack © 2026</footer>
   <script src="./src/db.js"></script>
   <script src="https://unpkg.com/html2pdf.js@0.9.2/dist/html2pdf.bundle.min.js"></script>
-  <button type="button" class="floating-sync-btn sync-now-btn no-print">
-    🔄 Sync
-  </button>  
+  <button type="button" class="floating-sync-btn sync-now-btn no-print" aria-label="Sync data" title="Sync data">↻</button>  
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-  <script src="./src/db.js"></script>
   <script src="./src/sync.js"></script>
   <script src="./src/app.js"></script>
 </body>

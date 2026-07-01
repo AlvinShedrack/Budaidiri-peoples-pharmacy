@@ -120,7 +120,17 @@ let queuedSyncTimer = null;
 
 function updateSyncButtons(text, busy = false) {
   document.querySelectorAll(".sync-now-btn").forEach(button => {
-    button.textContent = busy ? "Syncing..." : "🔄 Sync";
+    const isFloating = button.classList.contains("floating-sync-btn");
+
+    if (isFloating) {
+      button.textContent = busy ? "…" : "↻";
+      button.setAttribute("aria-label", busy ? "Syncing data" : "Sync data");
+      button.title = text || (busy ? "Syncing data" : "Sync data");
+    } else {
+      button.textContent = busy ? "Syncing..." : "🔄 Sync";
+      button.title = text || (busy ? "Syncing data" : "Sync data");
+    }
+
     button.disabled = busy;
   });
 
@@ -145,7 +155,7 @@ function startAutoSync() {
   autoSyncStarted = true;
 
   // Sync shortly after login
-  queueAutoSync(3000);
+  queueAutoSync(1000);
 
   // Sync when internet comes back
   window.addEventListener("online", () => {
@@ -170,25 +180,41 @@ async function syncNow() {
   }
 
   syncRunning = true;
-  updateSyncButtons("Syncing data...", true);
-  setSyncStatus("Syncing data...");
+  updateSyncButtons("Fetching cloud data first...", true);
+  setSyncStatus("Fetching cloud data first...");
 
   try {
+    let pulledBeforePush = 0;
     let pushed = 0;
-    let pulled = 0;
+    let pulledAfterPush = 0;
+
+    // 1. FIRST: fetch data from Supabase into this device
+    for (const storeName of SYNC_STORES) {
+      pulledBeforePush += await pullCloudStoreToLocal(storeName);
+    }
+
+    // 2. THEN: push this device's local data to Supabase
+    updateSyncButtons("Uploading local changes...", true);
+    setSyncStatus("Uploading local changes...");
 
     for (const storeName of SYNC_STORES) {
       pushed += await pushLocalStoreToCloud(storeName);
     }
 
+    // 3. FINAL: fetch again after upload to make sure this device has latest shared data
+    updateSyncButtons("Finalizing sync...", true);
+    setSyncStatus("Finalizing sync...");
+
     for (const storeName of SYNC_STORES) {
-      pulled += await pullCloudStoreToLocal(storeName);
+      pulledAfterPush += await pullCloudStoreToLocal(storeName);
     }
 
     const now = new Date().toLocaleString();
     localStorage.setItem(LAST_SYNC_KEY, now);
 
-    const message = `Sync complete. Uploaded ${pushed}, downloaded ${pulled}. Last sync: ${now}`;
+    const totalPulled = pulledBeforePush + pulledAfterPush;
+
+    const message = `Sync complete. Downloaded ${totalPulled}, uploaded ${pushed}. Last sync: ${now}`;
 
     setSyncStatus(message);
     updateSyncButtons(message, false);
@@ -196,10 +222,11 @@ async function syncNow() {
     if (typeof refreshAll === "function") {
       await refreshAll();
     }
+
   } catch (error) {
     console.error("Sync error:", error);
-    setSyncStatus("Sync failed. Check internet or Supabase settings.");
-    updateSyncButtons("Sync failed. Check internet or Supabase settings.", false);
+    setSyncStatus("Sync failed. Check internet, Supabase table, or permissions.");
+    updateSyncButtons("Sync failed. Check internet, Supabase table, or permissions.", false);
   } finally {
     syncRunning = false;
   }

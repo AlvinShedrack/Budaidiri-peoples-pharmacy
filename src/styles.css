@@ -6476,3 +6476,228 @@ tbody tr:hover {
     z-index: 99999 !important;
   }
 }
+
+
+/* =========================================================
+   FINAL FIX: MOBILE MENU, SYNC BUTTON, PANEL SPACING
+   Paste at the VERY BOTTOM of src/styles.css.
+========================================================= */
+
+@media (max-width: 768px) {
+  body.is-authenticated {
+    padding-bottom: 72px !important;
+  }
+
+  .app-shell {
+    display: block !important;
+  }
+
+  .sidebar {
+    position: sticky !important;
+    top: 0 !important;
+    z-index: 4000 !important;
+    width: 100% !important;
+    height: auto !important;
+    max-height: none !important;
+    min-height: 0 !important;
+    padding: 0 !important;
+    overflow: visible !important;
+    background: #fff7ed !important;
+    border-bottom: 1px solid #fed7aa !important;
+    box-shadow: 0 8px 28px rgba(120, 53, 15, 0.12) !important;
+  }
+
+  .logo-sidebar-card {
+    cursor: pointer !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: space-between !important;
+    width: 100% !important;
+    min-height: 76px !important;
+    margin: 0 !important;
+    padding: 12px 14px !important;
+    border-radius: 0 !important;
+    background: #fff7ed !important;
+    border: 0 !important;
+    border-bottom: 1px solid #fed7aa !important;
+    box-shadow: none !important;
+  }
+
+  .logo-sidebar-card::after {
+    content: none !important;
+  }
+
+  .sidebar-logo {
+    width: 155px !important;
+    max-width: 62vw !important;
+    height: auto !important;
+    max-height: 52px !important;
+    object-fit: contain !important;
+    margin: 0 !important;
+  }
+
+  .logo-sidebar-card span:not(.mobile-menu-btn span) {
+    display: none !important;
+  }
+
+  .mobile-menu-btn {
+    width: 46px !important;
+    height: 46px !important;
+    flex: 0 0 46px !important;
+    margin-left: auto !important;
+    border: 1px solid #fed7aa !important;
+    border-radius: 14px !important;
+    background: #ffffff !important;
+    display: inline-flex !important;
+    flex-direction: column !important;
+    align-items: center !important;
+    justify-content: center !important;
+    gap: 5px !important;
+    padding: 0 !important;
+    box-shadow: 0 8px 20px rgba(120, 53, 15, 0.12) !important;
+  }
+
+  .mobile-menu-btn span {
+    display: block !important;
+    width: 22px !important;
+    height: 3px !important;
+    border-radius: 999px !important;
+    background: #c2410c !important;
+    transition: 0.2s ease !important;
+  }
+
+  .sidebar.mobile-menu-open .mobile-menu-btn span:nth-child(1) {
+    transform: translateY(8px) rotate(45deg) !important;
+  }
+
+  .sidebar.mobile-menu-open .mobile-menu-btn span:nth-child(2) {
+    opacity: 0 !important;
+  }
+
+  .sidebar.mobile-menu-open .mobile-menu-btn span:nth-child(3) {
+    transform: translateY(-8px) rotate(-45deg) !important;
+  }
+
+  .sidebar nav {
+    display: flex !important;
+    flex-direction: column !important;
+    gap: 8px !important;
+    max-height: 0 !important;
+    opacity: 0 !important;
+    overflow: hidden !important;
+    pointer-events: none !important;
+    padding: 0 12px !important;
+    margin: 0 !important;
+    background: #fff7ed !important;
+    border-bottom: 1px solid #fed7aa !important;
+    transition: max-height 0.28s ease, opacity 0.22s ease, padding 0.22s ease !important;
+  }
+
+  .sidebar.mobile-menu-open nav {
+    max-height: calc(100vh - 76px) !important;
+    opacity: 1 !important;
+    overflow-y: auto !important;
+    pointer-events: auto !important;
+    padding: 12px !important;
+  }
+
+  .nav-link {
+    width: 100% !important;
+    min-height: 46px !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: flex-start !important;
+    text-align: left !important;
+    padding: 13px 14px !important;
+    margin: 0 !important;
+    border-radius: 16px !important;
+    font-size: 15px !important;
+    font-weight: 800 !important;
+    white-space: normal !important;
+    color: #374151 !important;
+    background: #ffffff !important;
+    border: 1px solid #fed7aa !important;
+  }
+
+  .nav-link.active {
+    color: #ffffff !important;
+    background: linear-gradient(135deg, #c2410c, #f97316) !important;
+    border-color: transparent !important;
+  }
+
+  .main-content {
+    margin-left: 0 !important;
+    width: 100% !important;
+    padding: 24px 12px 92px !important;
+  }
+
+  .page.active {
+    padding-top: 14px !important;
+  }
+
+  .page.active > .panel:first-child,
+  .page.active > .cards-grid:first-child,
+  .page.active > .two-column:first-child,
+  .page.active > .sales-layout:first-child {
+    margin-top: 12px !important;
+  }
+
+  .topbar {
+    display: none !important;
+  }
+
+  .top-actions .sync-now-btn {
+    display: none !important;
+  }
+
+  .backup-actions .sync-now-btn {
+    width: auto !important;
+    max-width: 118px !important;
+    align-self: flex-start !important;
+    padding: 10px 14px !important;
+    font-size: 13px !important;
+    border-radius: 999px !important;
+  }
+
+  body.is-authenticated .floating-sync-btn {
+    display: inline-flex !important;
+    position: fixed !important;
+    right: 14px !important;
+    bottom: 20px !important;
+    z-index: 5000 !important;
+    width: 52px !important;
+    height: 52px !important;
+    min-width: 52px !important;
+    padding: 0 !important;
+    border: none !important;
+    border-radius: 999px !important;
+    align-items: center !important;
+    justify-content: center !important;
+    font-size: 0 !important;
+    line-height: 1 !important;
+    background: linear-gradient(135deg, #c2410c, #f97316) !important;
+    color: #ffffff !important;
+    box-shadow: 0 14px 34px rgba(120, 53, 15, 0.35) !important;
+  }
+
+  body.is-authenticated .floating-sync-btn::before {
+    content: "↻";
+    font-size: 24px !important;
+    font-weight: 900 !important;
+  }
+
+  body.is-authenticated .floating-sync-btn:disabled::before {
+    content: "…";
+  }
+}
+
+/* Optional desktop cleanup for the top action buttons */
+.top-actions .sync-now-btn {
+  min-width: auto !important;
+  padding-inline: 13px !important;
+}
+
+.top-actions #printPageBtn {
+  white-space: nowrap !important;
+}
+
