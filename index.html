@@ -262,6 +262,34 @@
             <button id="clearCartBtn" class="ghost-btn full">Clear Cart</button>
           </div>
         </div>
+        <div class="panel">
+          <div class="panel-header split">
+            <div>
+              <h2>Sales History</h2>
+              <p>View, edit, and delete recorded sales directly from here.</p>
+            </div>
+            <button id="refreshSalesHistoryBtn" class="secondary-btn">Refresh</button>
+          </div>
+
+          <div class="table-wrap">
+            <table>
+              <thead>
+                <tr>
+                  <th>Receipt</th>
+                  <th>Customer</th>
+                  <th>Payment</th>
+                  <th>Type</th>
+                  <th>Total</th>
+                  <th>Paid</th>
+                  <th>Change</th>
+                  <th>Date</th>
+                  <th>Actions</th>
+                </tr>
+              </thead>
+              <tbody id="salesHistoryTable"></tbody>
+            </table>
+          </div>
+        </div>
       </section>
 
       <section id="purchases" class="page">

@@ -13,6 +13,7 @@ let currentUser = null;
 let cart = [];
 let purchaseLines = [];
 let currentReceiptSale = null;
+let editingSaleId = null;
 let deferredInstallPrompt = null;
 
 const BRAND = {
@@ -369,6 +370,7 @@ function showPage(pageId) {
   $("pageSubtitle").textContent = subtitle;
 
   if (pageId === "reports") renderReports();
+  if (pageId === "sales") renderSalesHistory();
 }
 
 function openModal(id) {
@@ -421,6 +423,112 @@ async function renderDashboard() {
       <span class="badge ${alert.type}">${alert.type}</span>
     </div>
   `).join("") : `<div class="warning-box">No priority alerts.</div>`;
+}
+
+async function renderSalesHistory() {
+  const sales = await getAll(STORE.sales);
+  const history = [...sales].sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+
+  $("salesHistoryTable").innerHTML = history.length
+    ? history.map(sale => {
+      const isEditing = editingSaleId === sale.id;
+      const createdAt = sale.createdAt ? new Date(sale.createdAt).toLocaleString() : "";
+      const customerName = escapeHtml(sale.customerName || "Walk-in customer");
+      const paymentMethod = escapeHtml(sale.paymentMethod || "Cash");
+      const saleType = escapeHtml(sale.saleType || "retail");
+      const total = Number(sale.total || 0);
+      const amountPaid = Number(sale.amountPaid || 0);
+      const changeGiven = Number(sale.changeGiven || Math.max(0, amountPaid - total));
+
+      if (isEditing) {
+        return `
+          <tr data-id="${sale.id}">
+            <td>${escapeHtml(sale.receiptNo || String(sale.id))}</td>
+            <td><input class="table-input" name="customerName" value="${customerName}" /></td>
+            <td>
+              <select class="table-input" name="paymentMethod">
+                ${["Cash", "Mobile Money", "Card", "Credit"].map(method => `<option value="${method}" ${method === paymentMethod ? "selected" : ""}>${method}</option>`).join("")}
+              </select>
+            </td>
+            <td>
+              <select class="table-input" name="saleType">
+                ${["retail", "wholesale"].map(type => `<option value="${type}" ${type === saleType ? "selected" : ""}>${type}</option>`).join("")}
+              </select>
+            </td>
+            <td><input class="table-input" type="number" min="0" step="0.01" name="total" value="${total.toFixed(2)}" /></td>
+            <td><input class="table-input" type="number" min="0" step="0.01" name="amountPaid" value="${amountPaid.toFixed(2)}" /></td>
+            <td><input class="table-input" type="number" min="0" step="0.01" name="changeGiven" value="${changeGiven.toFixed(2)}" /></td>
+            <td>${createdAt}</td>
+            <td class="actions-cell">
+              <button class="table-btn secondary" data-action="save-sale" data-id="${sale.id}">Save</button>
+              <button class="table-btn ghost" data-action="cancel-sale" data-id="${sale.id}">Cancel</button>
+            </td>
+          </tr>
+        `;
+      }
+
+      return `
+        <tr data-id="${sale.id}">
+          <td>${escapeHtml(sale.receiptNo || String(sale.id))}</td>
+          <td>${customerName}</td>
+          <td>${paymentMethod}</td>
+          <td>${saleType}</td>
+          <td>${formatMoney(total)}</td>
+          <td>${formatMoney(amountPaid)}</td>
+          <td>${formatMoney(changeGiven)}</td>
+          <td>${createdAt}</td>
+          <td class="actions-cell">
+            <button class="table-btn secondary" data-action="edit-sale" data-id="${sale.id}">Edit</button>
+            <button class="table-btn danger" data-action="delete-sale" data-id="${sale.id}">Delete</button>
+          </td>
+        </tr>
+      `;
+    }).join("")
+    : `<tr><td colspan="9">No sales recorded yet.</td></tr>`;
+}
+
+async function saveSaleEdits(saleId) {
+  const row = document.querySelector(`#salesHistoryTable tr[data-id="${saleId}"]`);
+  if (!row) return;
+
+  const sale = await getById(STORE.sales, saleId);
+  if (!sale) return showToast("Sale not found.");
+
+  const customerName = row.querySelector('[name="customerName"]').value.trim();
+  const paymentMethod = row.querySelector('[name="paymentMethod"]').value;
+  const saleType = row.querySelector('[name="saleType"]').value;
+  const total = Number(row.querySelector('[name="total"]').value) || 0;
+  const amountPaid = Number(row.querySelector('[name="amountPaid"]').value) || 0;
+  const changeGiven = Number(row.querySelector('[name="changeGiven"]').value) || Math.max(0, amountPaid - total);
+
+  sale.customerName = customerName || "Walk-in customer";
+  sale.paymentMethod = paymentMethod;
+  sale.saleType = saleType;
+  sale.total = total;
+  sale.amountPaid = amountPaid;
+  sale.changeGiven = changeGiven;
+  sale.updatedAt = new Date().toISOString();
+
+  await putRecord(STORE.sales, sale);
+  editingSaleId = null;
+  showToast("Sale updated successfully.");
+  await refreshAll();
+  renderSalesHistory();
+  if (typeof queueAutoSync === "function") queueAutoSync();
+}
+
+async function deleteSaleRecord(saleId) {
+  if (!confirm("Delete this sale record? This cannot be undone.")) return;
+
+  await deleteRecord(STORE.sales, saleId);
+  editingSaleId = null;
+  showToast("Sale record deleted.");
+  await refreshAll();
+  renderSalesHistory();
+
+  if (typeof queueAutoSync === "function") {
+    queueAutoSync();
+  }
 }
 
 async function renderInventory() {
@@ -2634,6 +2742,16 @@ function bindEvents() {
     if (action === "delete-medicine") deleteMedicine(id);
     if (action === "edit-supplier") openSupplierForm(id);
     if (action === "delete-supplier") deleteSupplier(id);
+    if (action === "edit-sale") {
+      editingSaleId = Number(id);
+      renderSalesHistory();
+    }
+    if (action === "save-sale") await saveSaleEdits(Number(id));
+    if (action === "cancel-sale") {
+      editingSaleId = null;
+      renderSalesHistory();
+    }
+    if (action === "delete-sale") await deleteSaleRecord(Number(id));
     if (action === "remove-cart") { cart.splice(index, 1); renderCart(); }
     if (action === "remove-purchase-line") { purchaseLines.splice(index, 1); renderPurchaseLines(); }
     if (action === "delete-expense") deletePurchaseExpense(id);
@@ -2645,6 +2763,8 @@ function bindEvents() {
   if (dashMedicineSearch) {
     dashMedicineSearch.addEventListener("input", renderDashboardMedicineSearch);
   }
+
+  $("refreshSalesHistoryBtn").addEventListener("click", renderSalesHistory);
 
   window.addEventListener("beforeinstallprompt", event => {
     event.preventDefault();

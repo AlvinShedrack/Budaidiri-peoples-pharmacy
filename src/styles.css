@@ -367,6 +367,25 @@ select:focus {
   border-radius: 14px;
 }
 
+td .table-input,
+th .table-input,
+.table-input {
+  width: 100%;
+  min-width: 120px;
+  padding: 10px 12px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  font-size: 13px;
+  background: #f8fafc;
+  box-sizing: border-box;
+}
+
+.actions-cell {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
 table {
   width: 100%;
   border-collapse: collapse;
