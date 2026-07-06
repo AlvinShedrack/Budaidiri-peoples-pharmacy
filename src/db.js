@@ -68,9 +68,23 @@ function getAll(storeName) {
   });
 }
 
+function normalizeDbKey(id) {
+  const value = String(id);
+
+  if (/^\d+$/.test(value)) {
+    return Number(value);
+  }
+
+  return id;
+}
+
+function generateLocalId() {
+  return Date.now() * 1000 + Math.floor(Math.random() * 1000);
+}
+
 function getById(storeName, id) {
   return new Promise((resolve, reject) => {
-    const request = getStore(storeName).get(Number(id));
+    const request = getStore(storeName).get(normalizeDbKey(id));
 
     request.onsuccess = () => resolve(request.result || null);
     request.onerror = () => reject(request.error);
@@ -79,9 +93,28 @@ function getById(storeName, id) {
 
 function addRecord(storeName, record) {
   return new Promise((resolve, reject) => {
-    const request = getStore(storeName, "readwrite").add(record);
+    const cleanRecord = { ...record };
 
-    request.onsuccess = () => resolve(request.result);
+    if (
+      cleanRecord.id === undefined ||
+      cleanRecord.id === null ||
+      cleanRecord.id === ""
+    ) {
+      cleanRecord.id = generateLocalId();
+    }
+
+    const request = getStore(storeName, "readwrite").add(cleanRecord);
+
+    request.onsuccess = () => resolve(cleanRecord.id);
+    request.onerror = () => reject(request.error);
+  });
+}
+
+function deleteRecord(storeName, id) {
+  return new Promise((resolve, reject) => {
+    const request = getStore(storeName, "readwrite").delete(normalizeDbKey(id));
+
+    request.onsuccess = () => resolve(true);
     request.onerror = () => reject(request.error);
   });
 }
@@ -95,14 +128,7 @@ function putRecord(storeName, record) {
   });
 }
 
-function deleteRecord(storeName, id) {
-  return new Promise((resolve, reject) => {
-    const request = getStore(storeName, "readwrite").delete(Number(id));
 
-    request.onsuccess = () => resolve(true);
-    request.onerror = () => reject(request.error);
-  });
-}
 
 function clearStore(storeName) {
   return new Promise((resolve, reject) => {
