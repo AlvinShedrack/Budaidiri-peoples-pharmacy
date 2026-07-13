@@ -374,11 +374,36 @@ function showPage(pageId) {
 }
 
 function openModal(id) {
-  $(id).classList.remove("hidden");
+  const modal = $(id);
+  if (!modal) return;
+
+  window.__lastModalTrigger = document.activeElement;
+  modal.classList.remove("hidden");
+  modal.setAttribute("aria-hidden", "false");
+  document.body.classList.add("modal-open");
+
+  window.requestAnimationFrame(() => {
+    const firstField = modal.querySelector(
+      'input:not([type="hidden"]):not([disabled]), select:not([disabled]), textarea:not([disabled]), button:not([disabled])'
+    );
+    firstField?.focus();
+  });
 }
 
 function closeModal(id) {
-  $(id).classList.add("hidden");
+  const modal = $(id);
+  if (!modal) return;
+
+  modal.classList.add("hidden");
+  modal.setAttribute("aria-hidden", "true");
+
+  if (!document.querySelector(".modal:not(.hidden)")) {
+    document.body.classList.remove("modal-open");
+  }
+
+  if (window.__lastModalTrigger && typeof window.__lastModalTrigger.focus === "function") {
+    window.__lastModalTrigger.focus();
+  }
 }
 
 async function renderDashboard() {
@@ -2665,6 +2690,25 @@ function bindEvents() {
 
   document.querySelectorAll("[data-close]").forEach(button => {
     button.addEventListener("click", () => closeModal(button.dataset.close));
+  });
+
+  document.querySelectorAll(".modal").forEach(modal => {
+    modal.addEventListener("click", event => {
+      if (event.target === modal) {
+        closeModal(modal.id);
+      }
+    });
+  });
+
+  document.addEventListener("keydown", event => {
+    if (event.key !== "Escape") return;
+
+    const openModals = Array.from(document.querySelectorAll(".modal:not(.hidden)"));
+    const activeModal = openModals.at(-1);
+
+    if (activeModal) {
+      closeModal(activeModal.id);
+    }
   });
 
   $("addMedicineBtn").addEventListener("click", () => openMedicineForm());

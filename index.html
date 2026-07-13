@@ -599,11 +599,11 @@
     </main>
   </div>
 
-  <div id="medicineModal" class="modal hidden">
+  <div id="medicineModal" class="modal hidden" role="dialog" aria-modal="true" aria-hidden="true" aria-labelledby="medicineModalTitle">
     <div class="modal-card large">
       <div class="modal-header">
         <h2 id="medicineModalTitle">Add Medicine</h2>
-        <button class="modal-close" data-close="medicineModal">×</button>
+        <button type="button" class="modal-close" data-close="medicineModal">×</button>
       </div>
       <form id="medicineForm" class="form-grid three">
         <input type="hidden" id="medicineId" />
@@ -627,11 +627,11 @@
     </div>
   </div>
 
-  <div id="supplierModal" class="modal hidden">
+  <div id="supplierModal" class="modal hidden" role="dialog" aria-modal="true" aria-hidden="true" aria-labelledby="supplierModalTitle">
     <div class="modal-card">
       <div class="modal-header">
         <h2 id="supplierModalTitle">Add Supplier</h2>
-        <button class="modal-close" data-close="supplierModal">×</button>
+        <button type="button" class="modal-close" data-close="supplierModal">×</button>
       </div>
       <form id="supplierForm" class="form-grid one">
         <input type="hidden" id="supplierId" />
@@ -647,11 +647,11 @@
     </div>
   </div>
 
-  <div id="userModal" class="modal hidden">
+  <div id="userModal" class="modal hidden" role="dialog" aria-modal="true" aria-hidden="true" aria-labelledby="userModalTitle">
     <div class="modal-card">
       <div class="modal-header">
         <h2 id="userModalTitle">Add User</h2>
-        <button class="modal-close" data-close="userModal">×</button>
+        <button type="button" class="modal-close" data-close="userModal">×</button>
       </div>
       <form id="userForm" class="form-grid one">
         <input type="hidden" id="userId" />
@@ -673,11 +673,11 @@
     </div>
   </div>
 
-  <div id="receiptModal" class="modal hidden">
+  <div id="receiptModal" class="modal hidden" role="dialog" aria-modal="true" aria-hidden="true" aria-label="Sales receipt">
     <div class="modal-card receipt-card">
       <div class="modal-header no-print">
         <h2>Receipt</h2>
-        <button class="modal-close" data-close="receiptModal">×</button>
+        <button type="button" class="modal-close" data-close="receiptModal">×</button>
       </div>
       <div id="receiptContent" class="receipt-content"></div>
       <div class="form-actions no-print">

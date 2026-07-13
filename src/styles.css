@@ -6720,3 +6720,59 @@ tbody tr:hover {
   white-space: nowrap !important;
 }
 
+/* =========================================================
+   FINAL POPUP FIX
+   Keeps Budadiri's existing theme while ensuring forms open
+   as centered overlays instead of appearing below the page.
+========================================================= */
+
+html.modal-open,
+body.modal-open {
+  overflow: hidden !important;
+}
+
+.modal {
+  position: fixed !important;
+  inset: 0 !important;
+  z-index: 99999 !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  padding: 20px !important;
+  overflow-x: hidden !important;
+  overflow-y: auto !important;
+}
+
+.modal.hidden {
+  display: none !important;
+}
+
+.modal > .modal-card {
+  position: relative !important;
+  width: min(560px, calc(100vw - 32px)) !important;
+  max-width: calc(100vw - 32px) !important;
+  max-height: calc(100vh - 40px) !important;
+  margin: auto !important;
+  overflow-y: auto !important;
+  z-index: 100000 !important;
+}
+
+#medicineModal > .modal-card {
+  width: min(920px, calc(100vw - 32px)) !important;
+}
+
+@media (max-width: 760px) {
+  .modal {
+    padding: 12px !important;
+    align-items: flex-start !important;
+  }
+
+  .modal > .modal-card,
+  #medicineModal > .modal-card {
+    width: calc(100vw - 24px) !important;
+    max-width: calc(100vw - 24px) !important;
+    max-height: calc(100vh - 24px) !important;
+    margin: 12px auto !important;
+  }
+}
+
