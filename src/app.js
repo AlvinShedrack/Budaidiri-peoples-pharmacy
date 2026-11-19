@@ -25,9 +25,10 @@ const BRAND = {
   phone: "0704-180 237 / 0786-403 301",
   email: ""
 };
+
 const pageMeta = {
   dashboard: ["Dashboard", "Business overview and alerts"],
-  inventory: ["Inventory", "Medicine stock, batches, prices, and expiry"],
+  inventory: ["Inventory", "Medicine catalog and pricing"],
   sales: ["Sales POS", "Sell medicine and print receipts"],
   purchases: ["Purchases", "Record stock-in and supplier purchases"],
   suppliers: ["Suppliers", "Supplier contacts and purchase source records"],
@@ -137,19 +138,19 @@ function isSameDay(isoDate, dateString) {
 }
 
 function daysUntil(dateString) {
-  if (!dateString) return -999999;
+  if (!dateString) return 999999;
 
   const isoDate = toIsoDate(dateString);
 
   if (!isoDate) {
-    return -999999;
+    return 999999;
   }
 
   const today = new Date(`${todayISO()}T00:00:00`);
   const target = new Date(`${isoDate}T00:00:00`);
 
   if (Number.isNaN(target.getTime())) {
-    return -999999;
+    return 999999;
   }
 
   return Math.ceil((target - today) / (1000 * 60 * 60 * 24));
@@ -176,6 +177,7 @@ function simpleHash(text) {
 
 function showToast(message) {
   const toast = $("toast");
+  if (!toast) return;
   toast.textContent = message;
   toast.classList.add("show");
   setTimeout(() => toast.classList.remove("show"), 2600);
@@ -288,7 +290,7 @@ function logout() {
 
 function showApp() {
   document.body.classList.add("is-authenticated");
-  
+
   $("loginScreen").classList.add("hidden");
   $("appShell").classList.remove("hidden");
   $("currentUserText").innerHTML = `<strong>${escapeHtml(currentUser.name)}</strong><br>${escapeHtml(currentUser.role)}`;
@@ -305,17 +307,14 @@ function applyRoleAccess() {
   const manager = ["Administrator", "Director"].includes(currentUser?.role);
   const directorOnly = currentUser?.role === "Director";
 
-  // Admin / Director only
   document.querySelectorAll(".admin-only").forEach(el => {
     el.classList.toggle("hidden", !manager);
   });
 
-  // Director only
   document.querySelectorAll(".director-only").forEach(el => {
     el.classList.toggle("hidden", !directorOnly);
   });
 
-  // Old class still used in your HTML: hide it from Dispenser
   document.querySelectorAll(".pharmacist-admin-only").forEach(el => {
     el.classList.toggle("hidden", !manager);
   });
@@ -353,7 +352,7 @@ function showPage(pageId) {
   document.querySelectorAll(".page").forEach(page => page.classList.remove("active"));
   document.querySelectorAll(".nav-link").forEach(link => link.classList.remove("active"));
 
-  $(pageId).classList.add("active");
+  $(pageId)?.classList.add("active");
   const activeNavLink = document.querySelector(`.nav-link[data-page="${pageId}"]`);
   activeNavLink?.classList.add("active");
 
@@ -371,6 +370,7 @@ function showPage(pageId) {
 
   if (pageId === "reports") renderReports();
   if (pageId === "sales") renderSalesHistory();
+  if (pageId === "purchases") renderPurchasesHistory();
 }
 
 function openModal(id) {
@@ -411,9 +411,9 @@ async function renderDashboard() {
   const sales = await getAll(STORE.sales);
   const today = todayISO();
   const todaySales = sales.filter(sale => isSameDay(sale.createdAt, today));
-  const lowStock = medicines.filter(med => Number(med.quantity) <= Number(med.reorderLevel || 5));
-  const expiring = medicines.filter(med => daysUntil(med.expiryDate) >= 0 && daysUntil(med.expiryDate) <= 90);
-  const expired = medicines.filter(med => daysUntil(med.expiryDate) < 0);
+  const lowStock = medicines.filter(med => Number(med.quantity || 0) <= Number(med.reorderLevel || 5));
+  const expiring = medicines.filter(med => med.expiryDate && daysUntil(med.expiryDate) >= 0 && daysUntil(med.expiryDate) <= 90);
+  const expired = medicines.filter(med => med.expiryDate && daysUntil(med.expiryDate) < 0);
 
   const todaySalesTotal = todaySales.reduce((sum, sale) => sum + Number(sale.total || 0), 0);
   const todayProfitTotal = todaySales.reduce((sum, sale) => sum + Number(sale.profit || 0), 0);
@@ -437,9 +437,21 @@ async function renderDashboard() {
   `).join("") : `<tr><td colspan="4">No sales yet.</td></tr>`;
 
   const alerts = [
-    ...expired.slice(0, 5).map(med => ({ type: "danger", title: `${med.name} expired`, detail: `Batch ${med.batchNo} expired on ${med.expiryDate}` })),
-    ...expiring.slice(0, 5).map(med => ({ type: "warning", title: `${med.name} expiring soon`, detail: `Batch ${med.batchNo} expires on ${med.expiryDate}` })),
-    ...lowStock.slice(0, 5).map(med => ({ type: "info", title: `${med.name} low stock`, detail: `${med.quantity} left. Reorder level is ${med.reorderLevel || 5}.` }))
+    ...expired.slice(0, 5).map(med => ({
+      type: "danger",
+      title: `${med.name} expired`,
+      detail: med.batchNo ? `Batch ${med.batchNo} expired on ${med.expiryDate}` : `Expired on ${med.expiryDate}`
+    })),
+    ...expiring.slice(0, 5).map(med => ({
+      type: "warning",
+      title: `${med.name} expiring soon`,
+      detail: med.batchNo ? `Batch ${med.batchNo} expires on ${med.expiryDate}` : `Expires on ${med.expiryDate}`
+    })),
+    ...lowStock.slice(0, 5).map(med => ({
+      type: "info",
+      title: `${med.name} low stock`,
+      detail: `${Number(med.quantity || 0)} left. Reorder level is ${med.reorderLevel || 5}.`
+    }))
   ];
 
   $("alertsList").innerHTML = alerts.length ? alerts.slice(0, 8).map(alert => `
@@ -558,72 +570,100 @@ async function deleteSaleRecord(saleId) {
 
 async function renderInventory() {
   const medicines = await getAll(STORE.medicines);
-  const suppliers = await getAll(STORE.suppliers);
-  const search = $("medicineSearch").value.toLowerCase().trim();
-  const filter = $("medicineStatusFilter").value;
+  const search = ($("medicineSearch")?.value || "").toLowerCase().trim();
+  const filter = $("medicineStatusFilter")?.value || "all";
 
   let filtered = medicines.filter(med => {
-    const supplier = supplierName(suppliers, med.supplierId).toLowerCase();
-    const haystack = `${med.name} ${med.genericName} ${med.batchNo} ${med.category} ${supplier}`.toLowerCase();
+    const haystack = `${med.name || ""} ${med.genericName || ""} ${med.category || ""}`.toLowerCase();
     return haystack.includes(search);
   });
 
   filtered = filtered.filter(med => {
     const d = daysUntil(med.expiryDate);
-    const isLow = Number(med.quantity) <= Number(med.reorderLevel || 5);
+    const isLow = Number(med.quantity || 0) <= Number(med.reorderLevel || 5);
     if (filter === "low") return isLow;
-    if (filter === "expiring") return d >= 0 && d <= 90;
-    if (filter === "expired") return d < 0;
+    if (filter === "expiring") return med.expiryDate && d >= 0 && d <= 90;
+    if (filter === "expired") return med.expiryDate && d < 0;
     return true;
   });
 
-  filtered.sort((a, b) => a.name.localeCompare(b.name));
+  filtered.sort((a, b) => String(a.name || "").localeCompare(String(b.name || "")));
 
-  $("medicineTable").innerHTML = filtered.length ? filtered.map(med => {
-    const d = daysUntil(med.expiryDate);
-    const stockBadge = Number(med.quantity) <= Number(med.reorderLevel || 5) ? "warning" : "success";
-    const expiryBadge = d < 0 ? "danger" : d <= 90 ? "warning" : "success";
-    const canEdit = requireRole(["Administrator", "Director"]);
-    return `
-      <tr>
-        <td><strong>${escapeHtml(med.name)}</strong><br><span class="muted">${escapeHtml(med.genericName || "")}</span></td>
-        <td>${escapeHtml(med.batchNo)}</td>
-        <td>${escapeHtml(med.category || "")}</td>
-        <td>${escapeHtml(supplierName(suppliers, med.supplierId))}</td>
-        <td><span class="badge ${stockBadge}">${Number(med.quantity || 0)}</span></td>
-        <td>${formatMoney(med.buyingPrice)}</td>
-        <td>${formatMoney(med.sellingPrice)}</td>
-        <td>${formatMoney(med.wholesalePrice)}</td>
-        <td><span class="badge ${expiryBadge}">${escapeHtml(formatDateDisplay(med.expiryDate))}</span></td>
-        <td>
-          ${canEdit ? `<button class="table-btn" data-action="edit-medicine" data-id="${med.id}">Edit</button>` : ""}
-          ${canEdit ? `<button class="table-btn danger" data-action="delete-medicine" data-id="${med.id}">Delete</button>` : ""}
-        </td>
-      </tr>
-    `;
-  }).join("") : `<tr><td colspan="9">No medicines found.</td></tr>`;
+  const canEdit = requireRole(["Administrator", "Director"]);
+
+  $("medicineTable").innerHTML = filtered.length ? filtered.map(med => `
+    <tr>
+      <td><strong>${escapeHtml(med.name)}</strong><br><span class="muted">${escapeHtml(med.genericName || "")}</span></td>
+      <td>${escapeHtml(med.category || "")}</td>
+      <td>${formatMoney(med.buyingPrice)}</td>
+      <td>${formatMoney(med.sellingPrice)}</td>
+      <td>${formatMoney(med.wholesalePrice)}</td>
+      <td>
+        ${canEdit ? `<button class="table-btn" data-action="edit-medicine" data-id="${med.id}">Edit</button>` : ""}
+        ${canEdit ? `<button class="table-btn danger" data-action="delete-medicine" data-id="${med.id}">Delete</button>` : ""}
+      </td>
+    </tr>
+  `).join("") : `<tr><td colspan="6">No medicines found.</td></tr>`;
 }
 
 async function populateSupplierOptions() {
   const suppliers = await getAll(STORE.suppliers);
   const options = suppliers.map(s => `<option value="${s.id}">${escapeHtml(s.name)}</option>`).join("");
-  $("medicineSupplier").innerHTML = `<option value="">Not set</option>${options}`;
-  $("purchaseSupplierSelect").innerHTML = suppliers.length ? options : `<option value="">Add supplier first</option>`;
+  if ($("medicineSupplier")) {
+    $("medicineSupplier").innerHTML = `<option value="">Not set</option>${options}`;
+  }
+  if ($("purchaseSupplierSelect")) {
+    $("purchaseSupplierSelect").innerHTML = options || `<option value="">Add supplier first</option>`;
+  }
+}
+
+async function getDefaultSalePriceForMedicine(med, saleType) {
+  if (!med) return 0;
+  const baseSelling = Number(med.sellingPrice || 0);
+  if (saleType === "wholesale") {
+    return med.wholesalePrice ? Number(med.wholesalePrice) : Math.round(baseSelling * 0.9);
+  }
+  return baseSelling;
+}
+
+async function syncSalePriceInputFromSelection() {
+  const priceInput = $("salePrice");
+  const select = $("saleMedicineSelect");
+  if (!priceInput || !select) return;
+
+  const medicineId = Number(select.value);
+  if (!medicineId) {
+    priceInput.value = "";
+    return;
+  }
+
+  const med = await getById(STORE.medicines, medicineId);
+  if (!med) return;
+
+  const saleType = $("saleType")?.value || "retail";
+  const price = await getDefaultSalePriceForMedicine(med, saleType);
+  priceInput.value = price;
 }
 
 async function populateMedicineOptions() {
   const medicines = await getAll(STORE.medicines);
-  const saleOptions = medicines
-    .filter(med => Number(med.quantity) > 0 && daysUntil(med.expiryDate) >= 0)
-    .sort((a, b) => a.name.localeCompare(b.name))
-    .map(med => `<option value="${med.id}">${escapeHtml(med.name)} | Qty ${med.quantity} | ${formatMoney(med.sellingPrice)}${med.wholesalePrice ? ` | Wholesale ${formatMoney(med.wholesalePrice)}` : ""}</option>`).join("");
+  const saleList = medicines
+    .filter(med => Number(med.quantity || 0) > 0 && (!med.expiryDate || daysUntil(med.expiryDate) >= 0))
+    .sort((a, b) => String(a.name || "").localeCompare(String(b.name || "")));
+
+  const saleOptions = saleList
+    .map(med => `<option value="${med.id}">${escapeHtml(med.name)} | Qty ${Number(med.quantity || 0)} | ${formatMoney(med.sellingPrice)}${med.wholesalePrice ? ` | Wholesale ${formatMoney(med.wholesalePrice)}` : ""}</option>`)
+    .join("");
 
   const purchaseOptions = medicines
-    .sort((a, b) => a.name.localeCompare(b.name))
-    .map(med => `<option value="${med.id}">${escapeHtml(med.name)} | Batch ${escapeHtml(med.batchNo)}</option>`).join("");
+    .sort((a, b) => String(a.name || "").localeCompare(String(b.name || "")))
+    .map(med => `<option value="${med.id}">${escapeHtml(med.name)}</option>`)
+    .join("");
 
   $("saleMedicineSelect").innerHTML = saleOptions || `<option value="">No sellable medicine available</option>`;
   $("purchaseMedicineSelect").innerHTML = purchaseOptions || `<option value="">Add medicine first</option>`;
+
+  await syncSalePriceInputFromSelection();
 }
 
 async function openMedicineForm(id = null) {
@@ -640,14 +680,10 @@ async function openMedicineForm(id = null) {
     $("medicineName").value = med.name || "";
     $("genericName").value = med.genericName || "";
     $("category").value = med.category || "";
-    $("batchNo").value = med.batchNo || "";
-    $("medicineSupplier").value = med.supplierId || "";
-    $("quantity").value = med.quantity || 0;
     $("buyingPrice").value = med.buyingPrice || 0;
     $("sellingPrice").value = med.sellingPrice || 0;
-    $("wholesalePrice").value = "";
+    $("wholesalePrice").value = med.wholesalePrice || 0;
     $("reorderLevel").value = med.reorderLevel || 5;
-    $("expiryDate").value = med.expiryDate || "";
     $("medicineNotes").value = med.notes || "";
   } else {
     $("medicineModalTitle").textContent = "Add Medicine";
@@ -660,7 +696,7 @@ async function saveMedicine(event) {
   event.preventDefault();
 
   if (!requireRole(["Administrator", "Director"])) {
-    showToast("Only Admin or Pharmacist can save medicines.");
+    showToast("Only Admin or Director can save medicines.");
     return;
   }
 
@@ -671,20 +707,17 @@ async function saveMedicine(event) {
     name: $("medicineName").value.trim(),
     genericName: $("genericName").value.trim(),
     category: $("category").value.trim(),
-    batchNo: $("batchNo").value.trim(),
-    supplierId: $("medicineSupplier").value ? Number($("medicineSupplier").value) : null,
-    quantity: Number($("quantity").value || 0),
+    quantity: existing ? Number(existing.quantity || 0) : 0,
     buyingPrice: Number($("buyingPrice").value || 0),
     sellingPrice: Number($("sellingPrice").value || 0),
     wholesalePrice: Number($("wholesalePrice").value || 0),
     reorderLevel: Number($("reorderLevel").value || 5),
-    expiryDate: normalizeDateInput($("expiryDate").value),
     notes: $("medicineNotes").value.trim(),
     updatedAt: new Date().toISOString()
   };
 
-  if (!record.name || !record.batchNo || !record.expiryDate) {
-    showToast("Medicine name, batch, and expiry date are required.");
+  if (!record.name) {
+    showToast("Medicine name is required.");
     return;
   }
 
@@ -763,7 +796,7 @@ async function renderDashboardMedicineSearch() {
 
   const filtered = medicines
     .filter(med => {
-      const text = `${med.name} ${med.genericName} ${med.batchNo}`.toLowerCase();
+      const text = `${med.name || ""} ${med.genericName || ""} ${med.category || ""}`.toLowerCase();
       return text.includes(query);
     })
     .slice(0, 10);
@@ -833,26 +866,26 @@ async function addToCart() {
   const medicineId = Number($("saleMedicineSelect").value);
   const qty = Number($("saleQty").value || 0);
   const discount = Number($("saleDiscount").value || 0);
+  const rawPriceInput = $("salePrice")?.value;
 
   if (!medicineId || qty <= 0) return showToast("Select medicine and quantity.");
 
   const med = await getById(STORE.medicines, medicineId);
   if (!med) return showToast("Medicine not found.");
-  if (daysUntil(med.expiryDate) < 0) return showToast("Cannot sell expired medicine.");
+  if (med.expiryDate && daysUntil(med.expiryDate) < 0) return showToast("Cannot sell expired medicine.");
 
   const existingQty = cart.filter(item => item.medicineId === medicineId).reduce((sum, item) => sum + item.qty, 0);
-  if (existingQty + qty > Number(med.quantity)) return showToast("Insufficient stock.");
+  if (existingQty + qty > Number(med.quantity || 0)) return showToast("Insufficient stock.");
 
   const saleType = $("saleType")?.value || "retail";
-  let effectivePrice = Number(med.sellingPrice || 0);
-  if (saleType === "wholesale") {
-    effectivePrice = med.wholesalePrice ? Number(med.wholesalePrice) : Math.round(effectivePrice * 0.9);
-  }
+  const defaultPrice = await getDefaultSalePriceForMedicine(med, saleType);
+  const parsedPrice = rawPriceInput !== undefined && rawPriceInput !== "" ? Number(rawPriceInput) : defaultPrice;
+  const effectivePrice = Number.isNaN(parsedPrice) || parsedPrice < 0 ? defaultPrice : parsedPrice;
 
   cart.push({
     medicineId,
     name: med.name,
-    batchNo: med.batchNo,
+    batchNo: med.batchNo || "",
     qty,
     sellingPrice: effectivePrice,
     buyingPrice: Number(med.buyingPrice || 0),
@@ -865,15 +898,32 @@ async function addToCart() {
   renderCart();
 }
 
+function updateCartItemPrice(index, newPrice) {
+  const item = cart[index];
+  if (!item) return;
+  const parsed = Number(newPrice);
+  item.sellingPrice = Number.isNaN(parsed) || parsed < 0 ? 0 : parsed;
+  renderCart();
+}
+
 function renderCart() {
   $("cartTable").innerHTML = cart.length ? cart.map((item, index) => {
     const subtotal = item.qty * item.sellingPrice;
     const total = Math.max(0, subtotal - item.discount);
     return `
       <tr>
-        <td><strong>${escapeHtml(item.name)}</strong><br><span class="muted">Batch ${escapeHtml(item.batchNo)}</span></td>
+        <td><strong>${escapeHtml(item.name)}</strong>${item.batchNo ? `<br><span class="muted">Batch ${escapeHtml(item.batchNo)}</span>` : ""}</td>
         <td>${item.qty}</td>
-        <td>${formatMoney(item.sellingPrice)}</td>
+        <td>
+          <input
+            type="number"
+            class="table-input cart-price-input"
+            data-cart-price-index="${index}"
+            min="0"
+            step="any"
+            value="${Number(item.sellingPrice || 0)}"
+          />
+        </td>
         <td>${formatMoney(item.discount)}</td>
         <td>${formatMoney(total)}</td>
         <td><button class="table-btn danger" data-action="remove-cart" data-index="${index}">Remove</button></td>
@@ -896,7 +946,7 @@ async function completeSale() {
   const medicines = await getAll(STORE.medicines);
   for (const item of cart) {
     const med = medicines.find(m => Number(m.id) === Number(item.medicineId));
-    if (!med || Number(med.quantity) < Number(item.qty)) {
+    if (!med || Number(med.quantity || 0) < Number(item.qty)) {
       return showToast(`Insufficient stock for ${item.name}.`);
     }
   }
@@ -921,7 +971,7 @@ async function completeSale() {
 
   for (const item of cart) {
     const med = await getById(STORE.medicines, item.medicineId);
-    med.quantity = Number(med.quantity) - Number(item.qty);
+    med.quantity = Number(med.quantity || 0) - Number(item.qty);
     med.updatedAt = new Date().toISOString();
     await putRecord(STORE.medicines, med);
   }
@@ -1081,22 +1131,26 @@ function showReceipt(sale) {
 function renderPurchaseLines() {
   $("purchaseLinesTable").innerHTML = purchaseLines.length ? purchaseLines.map((item, index) => `
     <tr>
-      <td><strong>${escapeHtml(item.name)}</strong><br><span class="muted">Batch ${escapeHtml(item.batchNo)}</span></td>
+      <td><strong>${escapeHtml(item.name)}</strong></td>
+      <td>${escapeHtml(item.batchNo || "")}</td>
+      <td>${escapeHtml(item.expiryDate || "")}</td>
       <td>${item.qty}</td>
       <td>${formatMoney(item.unitCost)}</td>
       <td>${formatMoney(item.qty * item.unitCost)}</td>
       <td><button class="table-btn danger" data-action="remove-purchase-line" data-index="${index}">Remove</button></td>
     </tr>
-  `).join("") : `<tr><td colspan="5">No purchase lines.</td></tr>`;
+  `).join("") : `<tr><td colspan="7">No purchase lines.</td></tr>`;
 
   const total = purchaseLines.reduce((sum, item) => sum + (item.qty * item.unitCost), 0);
   $("purchaseTotal").textContent = formatMoney(total);
 }
 
 async function addPurchaseLine() {
-  if (!requireRole(["Administrator", "Director"])) return showToast("Only Admin or Pharmacist can add purchases.");
+  if (!requireRole(["Administrator", "Director"])) return showToast("Only Admin or Director can add purchases.");
 
   const medicineId = Number($("purchaseMedicineSelect").value);
+  const batchNo = ($("purchaseBatch")?.value || "").trim();
+  const expiryDate = normalizeDateInput(($("purchaseExpiry")?.value || "").trim());
   const qty = Number($("purchaseQty").value || 0);
   const unitCost = Number($("purchaseCost").value || 0);
 
@@ -1108,11 +1162,14 @@ async function addPurchaseLine() {
   purchaseLines.push({
     medicineId,
     name: med.name,
-    batchNo: med.batchNo,
+    batchNo,
+    expiryDate,
     qty,
     unitCost
   });
 
+  if ($("purchaseBatch")) $("purchaseBatch").value = "";
+  if ($("purchaseExpiry")) $("purchaseExpiry").value = "";
   $("purchaseQty").value = "";
   $("purchaseCost").value = "";
   renderPurchaseLines();
@@ -1122,7 +1179,7 @@ async function completePurchase() {
   if (!requireRole(["Administrator", "Director"])) return showToast("Not allowed.");
   if (!purchaseLines.length) return showToast("No purchase lines.");
 
-  const supplierId = Number($("purchaseSupplierSelect").value);
+  const supplierId = Number($("purchaseSupplierSelect").value) || null;
   const invoiceNo = $("purchaseInvoice").value.trim() || `PINV-${Date.now()}`;
   const purchaseDate = normalizeDateInput($("purchaseDate").value || formatDateDisplay(new Date().toISOString()));
   const total = purchaseLines.reduce((sum, item) => sum + (item.qty * item.unitCost), 0);
@@ -1131,7 +1188,15 @@ async function completePurchase() {
     const med = await getById(STORE.medicines, line.medicineId);
     if (!med) continue;
     med.quantity = Number(med.quantity || 0) + Number(line.qty);
-    med.buyingPrice = Number(line.unitCost || med.buyingPrice || 0);
+    if (line.unitCost >= 0) {
+      med.buyingPrice = Number(line.unitCost);
+    }
+    if (line.batchNo) {
+      med.batchNo = line.batchNo;
+    }
+    if (line.expiryDate) {
+      med.expiryDate = line.expiryDate;
+    }
     med.updatedAt = new Date().toISOString();
     await putRecord(STORE.medicines, med);
   }
@@ -1160,10 +1225,59 @@ async function completePurchase() {
   }
 }
 
+async function renderPurchasesHistory() {
+  const table = $("purchasesHistoryTable");
+  if (!table) return;
+
+  const purchases = await getAll(STORE.purchases);
+  const suppliers = await getAll(STORE.suppliers);
+  const canEdit = requireRole(["Administrator", "Director"]);
+
+  const sorted = [...purchases].sort((a, b) => new Date(b.createdAt || 0) - new Date(a.createdAt || 0));
+
+  table.innerHTML = sorted.length ? sorted.map(purchase => {
+    const itemsSummary = Array.isArray(purchase.lines) && purchase.lines.length
+      ? purchase.lines.map(l => {
+        const meta = [l.batchNo ? `Batch ${l.batchNo}` : "", l.expiryDate ? `Exp ${l.expiryDate}` : ""].filter(Boolean).join(", ");
+        return `${escapeHtml(l.name)} (${l.qty})${meta ? ` <span class="muted">[${escapeHtml(meta)}]</span>` : ""}`;
+      }).join("<br>")
+      : `<span class="muted">No lines</span>`;
+
+    return `
+      <tr>
+        <td><strong>${escapeHtml(purchase.invoiceNo || "")}</strong></td>
+        <td>${escapeHtml(supplierName(suppliers, purchase.supplierId))}</td>
+        <td>${escapeHtml(formatDateDisplay(purchase.purchaseDate || purchase.createdAt))}</td>
+        <td>${itemsSummary}</td>
+        <td>${formatMoney(purchase.total)}</td>
+        <td>${escapeHtml(purchase.createdByName || "")}</td>
+        <td>
+          ${canEdit ? `<button class="table-btn danger" data-action="delete-purchase" data-id="${purchase.id}">Delete</button>` : ""}
+        </td>
+      </tr>
+    `;
+  }).join("") : `<tr><td colspan="7">No purchases recorded yet.</td></tr>`;
+}
+
+async function deletePurchaseRecord(id) {
+  if (!requireRole(["Administrator", "Director"])) return showToast("Not allowed.");
+  const purchase = await getById(STORE.purchases, id);
+  if (!purchase) return;
+  if (!confirm(`Delete purchase invoice ${purchase.invoiceNo || id}?`)) return;
+
+  await deleteRecord(STORE.purchases, id);
+  await writeAudit("purchase_deleted", { id, invoiceNo: purchase.invoiceNo });
+  showToast("Purchase deleted.");
+  await refreshAll();
+  if (typeof queueAutoSync === "function") {
+    queueAutoSync();
+  }
+}
+
 async function renderReports() {
   const reportDate = $("reportDate").value || todayISO();
   $("reportDate").value = reportDate;
-    if ($("reportIdText")) {
+  if ($("reportIdText")) {
     $("reportIdText").textContent = `SR-${reportDate.replaceAll("-", "")}`;
   }
 
@@ -1180,9 +1294,9 @@ async function renderReports() {
   const selectedSales = sales.filter(sale => isSameDay(sale.createdAt, reportDate));
   const salesTotal = selectedSales.reduce((sum, sale) => sum + Number(sale.total || 0), 0);
   const profitTotal = selectedSales.reduce((sum, sale) => sum + Number(sale.profit || 0), 0);
-  const lowStock = medicines.filter(med => Number(med.quantity) <= Number(med.reorderLevel || 5));
-  const expired = medicines.filter(med => daysUntil(med.expiryDate) < 0);
-  const expiring = medicines.filter(med => daysUntil(med.expiryDate) >= 0 && daysUntil(med.expiryDate) <= 90);
+  const lowStock = medicines.filter(med => Number(med.quantity || 0) <= Number(med.reorderLevel || 5));
+  const expired = medicines.filter(med => med.expiryDate && daysUntil(med.expiryDate) < 0);
+  const expiring = medicines.filter(med => med.expiryDate && daysUntil(med.expiryDate) >= 0 && daysUntil(med.expiryDate) <= 90);
 
   $("reportSalesTotal").textContent = formatMoney(salesTotal);
   $("reportProfitTotal").textContent = formatMoney(profitTotal);
@@ -1206,16 +1320,16 @@ async function renderReports() {
     const d = daysUntil(med.expiryDate);
     let status = "OK";
     let badge = "success";
-    if (d < 0) { status = "Expired"; badge = "danger"; }
-    else if (d <= 90) { status = "Expiring"; badge = "warning"; }
-    if (Number(med.quantity) <= Number(med.reorderLevel || 5)) {
+    if (med.expiryDate && d < 0) { status = "Expired"; badge = "danger"; }
+    else if (med.expiryDate && d <= 90) { status = "Expiring"; badge = "warning"; }
+    if (Number(med.quantity || 0) <= Number(med.reorderLevel || 5)) {
       status += status === "OK" ? "Low stock" : " + Low stock";
       if (badge !== "danger") badge = "warning";
     }
     return `
       <tr>
         <td>${escapeHtml(med.name)}</td>
-        <td>${med.quantity}</td>
+        <td>${Number(med.quantity || 0)}</td>
         <td>${escapeHtml(formatDateDisplay(med.expiryDate))}</td>
         <td><span class="badge ${badge}">${escapeHtml(status)}</span></td>
       </tr>
@@ -1246,12 +1360,13 @@ async function exportSalesCsv() {
 async function exportPurchasesCsv() {
   const purchases = await getAll(STORE.purchases);
   const suppliers = await getAll(STORE.suppliers);
-  const rows = [["Invoice", "Supplier", "Total Cost", "Created By", "Created By Name", "Date"]];
+  const rows = [["Invoice", "Supplier", "Purchase Date", "Total Cost", "Created By", "Created By Name", "Date"]];
   purchases.forEach(purchase => {
     const supplier = suppliers.find(s => Number(s.id) === Number(purchase.supplierId));
     rows.push([
       purchase.invoiceNo,
       supplier ? supplier.name : "Unknown",
+      purchase.purchaseDate || "",
       purchase.total,
       purchase.createdBy,
       purchase.createdByName,
@@ -1361,35 +1476,6 @@ function downloadFile(filename, content, type = "application/json") {
   URL.revokeObjectURL(link.href);
 }
 
-function browserPrint(modeClass, message) {
-  document.body.classList.add(modeClass);
-
-  const cleanup = () => {
-    document.body.classList.remove(modeClass);
-    window.removeEventListener("afterprint", cleanup);
-  };
-
-  window.addEventListener("afterprint", cleanup);
-
-  setTimeout(() => {
-    window.print();
-    showToast(message);
-  }, 50);
-
-  // Safety cleanup for browsers that do not fire afterprint consistently.
-  setTimeout(cleanup, 5000);
-}
-
-function canUseHtml2Pdf() {
-  return typeof window.html2pdf === "function";
-}
-
-/* =========================================================
-   PROFESSIONAL PRINT / PDF REPORTS
-   Replace the old printOrExportPdf() and printOrExportPagePdf()
-   with this full block.
-========================================================= */
-
 function safeDateTime(value) {
   if (!value) return "";
   const date = new Date(value);
@@ -1407,329 +1493,54 @@ function safeTime(value) {
 function reportStyles() {
   return `
     <style>
-      * {
-        box-sizing: border-box;
-      }
-
-      body {
-        margin: 0;
-        background: #f8fafc;
-        color: #0f172a;
-        font-family: Arial, Helvetica, sans-serif;
-        font-size: 12px;
-        line-height: 1.45;
-      }
-
-      .report-page {
-        position: relative;
-        width: 100%;
-        max-width: 1120px;
-        margin: 0 auto;
-        background: #ffffff;
-        padding: 28px;
-        overflow: hidden;
-      }
-
-      .report-watermark {
-        position: absolute;
-        width: 42%;
-        max-width: 420px;
-        opacity: 0.045;
-        top: 48%;
-        left: 50%;
-        transform: translate(-50%, -50%);
-        z-index: 0;
-        pointer-events: none;
-      }
-
-      .report-page > *:not(.report-watermark) {
-        position: relative;
-        z-index: 1;
-      }
-
-      .report-header {
-        display: flex;
-        justify-content: space-between;
-        align-items: flex-start;
-        gap: 24px;
-        border-bottom: 3px solid #0057b8;
-        padding-bottom: 16px;
-        margin-bottom: 22px;
-      }
-
-      .brand {
-        display: flex;
-        align-items: center;
-        gap: 12px;
-      }
-
-      .brand-logo-img {
-        width: 58px;
-        height: 58px;
-        object-fit: contain;
-        border-radius: 12px;
-        background: #ffffff;
-      }
-
-      .brand h1 {
-        margin: 0;
-        font-size: 20px;
-        letter-spacing: -0.02em;
-        color: #0057b8;
-        text-transform: uppercase;
-      }
-
-      .brand p {
-        margin: 3px 0 0;
-        color: #0b8f2a;
-        font-weight: 700;
-      }
-
-      .report-meta {
-        text-align: right;
-        color: #334155;
-        font-size: 11px;
-        border: 1px solid #bfdbfe;
-        border-radius: 10px;
-        padding: 10px;
-        background: #f8fbff;
-      }
-
-      .report-title {
-        margin-bottom: 18px;
-      }
-
-      .report-title h2 {
-        margin: 0 0 4px;
-        font-size: 22px;
-        color: #0057b8;
-        text-transform: uppercase;
-      }
-
-      .report-title p {
-        margin: 0;
-        color: #64748b;
-      }
-
-      .summary-grid {
-        display: grid;
-        grid-template-columns: repeat(4, 1fr);
-        gap: 10px;
-        margin: 16px 0 22px;
-      }
-
-      .summary-card {
-        border: 1px solid #bfdbfe;
-        border-left: 4px solid #0057b8;
-        padding: 11px 12px;
-        background: rgba(248, 251, 255, 0.92);
-        border-radius: 10px;
-      }
-
-      .summary-card span {
-        display: block;
-        color: #64748b;
-        font-size: 10px;
-        text-transform: uppercase;
-        font-weight: 700;
-        letter-spacing: 0.04em;
-      }
-
-      .summary-card strong {
-        display: block;
-        margin-top: 5px;
-        font-size: 16px;
-        color: #0057b8;
-      }
-
-      .section {
-        margin-top: 20px;
-        page-break-inside: avoid;
-      }
-
-      .section h3 {
-        margin: 0 0 8px;
-        font-size: 15px;
-        color: #0057b8;
-        border-bottom: 1px solid #bfdbfe;
-        padding-bottom: 6px;
-        text-transform: uppercase;
-      }
-
-      .info-grid {
-        display: grid;
-        grid-template-columns: repeat(3, 1fr);
-        gap: 8px;
-        margin: 10px 0 16px;
-      }
-
-      .info-box {
-        border: 1px solid #e2e8f0;
-        padding: 9px;
-        background: rgba(248, 250, 252, 0.92);
-        border-radius: 8px;
-      }
-
-      .info-box span {
-        display: block;
-        color: #64748b;
-        font-size: 10px;
-        text-transform: uppercase;
-        font-weight: 700;
-      }
-
-      .info-box strong {
-        display: block;
-        margin-top: 4px;
-        color: #0f172a;
-      }
-
-      table {
-        width: 100%;
-        border-collapse: collapse;
-        margin-top: 8px;
-        page-break-inside: auto;
-        background: rgba(255, 255, 255, 0.92);
-      }
-
-      thead {
-        display: table-header-group;
-      }
-
-      tr {
-        page-break-inside: avoid;
-      }
-
-      th {
-        background: #0057b8;
-        color: #ffffff;
-        text-align: left;
-        padding: 8px;
-        font-size: 10px;
-        text-transform: uppercase;
-        letter-spacing: 0.04em;
-        border: 1px solid #0057b8;
-      }
-
-      td {
-        padding: 8px;
-        border: 1px solid #bfdbfe;
-        vertical-align: top;
-      }
-
-      tbody tr:nth-child(even) {
-        background: rgba(248, 251, 255, 0.75);
-      }
-
-      .text-right {
-        text-align: right;
-      }
-
-      .text-center {
-        text-align: center;
-      }
-
-      .muted {
-        color: #64748b;
-      }
-
-      .status {
-        font-weight: 700;
-      }
-
-      .status-danger {
-        color: #b91c1c;
-      }
-
-      .status-warning {
-        color: #b45309;
-      }
-
-      .status-success {
-        color: #15803d;
-      }
-
-      .empty-box {
-        border: 1px dashed #cbd5e1;
-        background: rgba(248, 250, 252, 0.92);
-        padding: 14px;
-        color: #64748b;
-        border-radius: 8px;
-      }
-
-      .totals-box {
-        width: 320px;
-        margin-left: auto;
-        margin-top: 14px;
-        border: 1px solid #bfdbfe;
-        background: rgba(255, 255, 255, 0.92);
-      }
-
-      .total-line {
-        display: flex;
-        justify-content: space-between;
-        gap: 12px;
-        padding: 9px 11px;
-        border-bottom: 1px solid #e2e8f0;
-      }
-
-      .total-line:last-child {
-        border-bottom: none;
-        font-weight: 800;
-        font-size: 14px;
-        background: #eaf3ff;
-        color: #0057b8;
-      }
-
-      .approval-box {
-        display: grid;
-        grid-template-columns: 1fr 1fr;
-        gap: 18px;
-        margin-top: 26px;
-      }
-
-      .approval-box div {
-        border: 1px solid #bfdbfe;
-        padding: 12px;
-        border-radius: 10px;
-      }
-
-      .approval-line {
-        display: block;
-        border-bottom: 1px solid #0f172a;
-        height: 24px;
-        margin-top: 10px;
-      }
-
-      .footer {
-        margin-top: 28px;
-        padding-top: 12px;
-        border-top: 1px solid #bfdbfe;
-        color: #64748b;
-        font-size: 10px;
-        display: flex;
-        justify-content: space-between;
-        gap: 18px;
-      }
-
+      * { box-sizing: border-box; }
+      body { margin: 0; background: #f8fafc; color: #0f172a; font-family: Arial, Helvetica, sans-serif; font-size: 12px; line-height: 1.45; }
+      .report-page { position: relative; width: 100%; max-width: 1120px; margin: 0 auto; background: #ffffff; padding: 28px; overflow: hidden; }
+      .report-watermark { position: absolute; width: 42%; max-width: 420px; opacity: 0.045; top: 48%; left: 50%; transform: translate(-50%, -50%); z-index: 0; pointer-events: none; }
+      .report-page > *:not(.report-watermark) { position: relative; z-index: 1; }
+      .report-header { display: flex; justify-content: space-between; align-items: flex-start; gap: 24px; border-bottom: 3px solid #0057b8; padding-bottom: 16px; margin-bottom: 22px; }
+      .brand { display: flex; align-items: center; gap: 12px; }
+      .brand-logo-img { width: 58px; height: 58px; object-fit: contain; border-radius: 12px; background: #ffffff; }
+      .brand h1 { margin: 0; font-size: 20px; letter-spacing: -0.02em; color: #0057b8; text-transform: uppercase; }
+      .brand p { margin: 3px 0 0; color: #0b8f2a; font-weight: 700; }
+      .report-meta { text-align: right; color: #334155; font-size: 11px; border: 1px solid #bfdbfe; border-radius: 10px; padding: 10px; background: #f8fbff; }
+      .report-title { margin-bottom: 18px; }
+      .report-title h2 { margin: 0 0 4px; font-size: 22px; color: #0057b8; text-transform: uppercase; }
+      .report-title p { margin: 0; color: #64748b; }
+      .summary-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; margin: 16px 0 22px; }
+      .summary-card { border: 1px solid #bfdbfe; border-left: 4px solid #0057b8; padding: 11px 12px; background: rgba(248, 251, 255, 0.92); border-radius: 10px; }
+      .summary-card span { display: block; color: #64748b; font-size: 10px; text-transform: uppercase; font-weight: 700; letter-spacing: 0.04em; }
+      .summary-card strong { display: block; margin-top: 5px; font-size: 16px; color: #0057b8; }
+      .section { margin-top: 20px; page-break-inside: avoid; }
+      .section h3 { margin: 0 0 8px; font-size: 15px; color: #0057b8; border-bottom: 1px solid #bfdbfe; padding-bottom: 6px; text-transform: uppercase; }
+      .info-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin: 10px 0 16px; }
+      .info-box { border: 1px solid #e2e8f0; padding: 9px; background: rgba(248, 250, 252, 0.92); border-radius: 8px; }
+      .info-box span { display: block; color: #64748b; font-size: 10px; text-transform: uppercase; font-weight: 700; }
+      .info-box strong { display: block; margin-top: 4px; color: #0f172a; }
+      table { width: 100%; border-collapse: collapse; margin-top: 8px; page-break-inside: auto; background: rgba(255, 255, 255, 0.92); }
+      thead { display: table-header-group; }
+      tr { page-break-inside: avoid; }
+      th { background: #0057b8; color: #ffffff; text-align: left; padding: 8px; font-size: 10px; text-transform: uppercase; letter-spacing: 0.04em; border: 1px solid #0057b8; }
+      td { padding: 8px; border: 1px solid #bfdbfe; vertical-align: top; }
+      tbody tr:nth-child(even) { background: rgba(248, 251, 255, 0.75); }
+      .text-right { text-align: right; }
+      .status { font-weight: 700; }
+      .status-danger { color: #b91c1c; }
+      .status-warning { color: #b45309; }
+      .status-success { color: #15803d; }
+      .empty-box { border: 1px dashed #cbd5e1; background: rgba(248, 250, 252, 0.92); padding: 14px; color: #64748b; border-radius: 8px; }
+      .totals-box { width: 320px; margin-left: auto; margin-top: 14px; border: 1px solid #bfdbfe; background: rgba(255, 255, 255, 0.92); }
+      .total-line { display: flex; justify-content: space-between; gap: 12px; padding: 9px 11px; border-bottom: 1px solid #e2e8f0; }
+      .total-line:last-child { border-bottom: none; font-weight: 800; font-size: 14px; background: #eaf3ff; color: #0057b8; }
+      .approval-box { display: grid; grid-template-columns: 1fr 1fr; gap: 18px; margin-top: 26px; }
+      .approval-box div { border: 1px solid #bfdbfe; padding: 12px; border-radius: 10px; }
+      .approval-line { display: block; border-bottom: 1px solid #0f172a; height: 24px; margin-top: 10px; }
+      .footer { margin-top: 28px; padding-top: 12px; border-top: 1px solid #bfdbfe; color: #64748b; font-size: 10px; display: flex; justify-content: space-between; gap: 18px; }
       @media print {
-        body {
-          background: #ffffff;
-        }
-
-        .report-page {
-          max-width: none;
-          padding: 0;
-        }
-
-        a[href]::after {
-          content: "" !important;
-        }
-
-        @page {
-          size: A4 portrait;
-          margin: 12mm;
-        }
+        body { background: #ffffff; }
+        .report-page { max-width: none; padding: 0; }
+        a[href]::after { content: "" !important; }
+        @page { size: A4 portrait; margin: 12mm; }
       }
     </style>
   `;
@@ -1747,11 +1558,9 @@ function reportShell(title, subtitle, bodyHtml) {
       <title>${escapeHtml(title)}</title>
       ${reportStyles()}
     </head>
-
     <body>
       <main class="report-page">
         <img src="${BRAND.logo}" class="report-watermark" alt="" />
-
         <header class="report-header">
           <div class="brand">
             <img src="${BRAND.logo}" class="brand-logo-img" alt="${BRAND.name}" />
@@ -1760,7 +1569,6 @@ function reportShell(title, subtitle, bodyHtml) {
               <p>${BRAND.tagline}</p>
             </div>
           </div>
-
           <div class="report-meta">
             <strong>Generated:</strong> ${safeDateTime(new Date().toISOString())}<br>
             <strong>Printed By:</strong> ${printedBy}<br>
@@ -1768,25 +1576,15 @@ function reportShell(title, subtitle, bodyHtml) {
             <strong>Phone:</strong> ${BRAND.phone}
           </div>
         </header>
-
         <section class="report-title">
           <h2>${escapeHtml(title)}</h2>
           <p>${escapeHtml(subtitle || "")}</p>
         </section>
-
         ${bodyHtml}
-
         <section class="approval-box">
-          <div>
-            <strong>Approved By:</strong>
-            <span class="approval-line"></span>
-          </div>
-          <div>
-            <strong>Date:</strong>
-            <span class="approval-line"></span>
-          </div>
+          <div><strong>Approved By:</strong><span class="approval-line"></span></div>
+          <div><strong>Date:</strong><span class="approval-line"></span></div>
         </section>
-
         <footer class="footer">
           <span>Generated by ${BRAND.name}</span>
           <span>${BRAND.email}</span>
@@ -1798,50 +1596,35 @@ function reportShell(title, subtitle, bodyHtml) {
 }
 
 function summaryCard(label, value) {
-  return `
-    <div class="summary-card">
-      <span>${escapeHtml(label)}</span>
-      <strong>${escapeHtml(value)}</strong>
-    </div>
-  `;
+  return `<div class="summary-card"><span>${escapeHtml(label)}</span><strong>${escapeHtml(value)}</strong></div>`;
 }
 
 function infoBox(label, value) {
-  return `
-    <div class="info-box">
-      <span>${escapeHtml(label)}</span>
-      <strong>${escapeHtml(value)}</strong>
-    </div>
-  `;
+  return `<div class="info-box"><span>${escapeHtml(label)}</span><strong>${escapeHtml(value)}</strong></div>`;
 }
 
 function makeTable(headers, rows, emptyMessage = "No records found.") {
   if (!rows.length) {
     return `<div class="empty-box">${escapeHtml(emptyMessage)}</div>`;
   }
-
   return `
     <table>
-      <thead>
-        <tr>
-          ${headers.map(header => `<th>${escapeHtml(header)}</th>`).join("")}
-        </tr>
-      </thead>
-      <tbody>
-        ${rows.join("")}
-      </tbody>
+      <thead><tr>${headers.map(header => `<th>${escapeHtml(header)}</th>`).join("")}</tr></thead>
+      <tbody>${rows.join("")}</tbody>
     </table>
   `;
 }
 
 function medicineStatus(med) {
   const d = daysUntil(med.expiryDate);
-  const isLow = Number(med.quantity) <= Number(med.reorderLevel || 5);
+  const isLow = Number(med.quantity || 0) <= Number(med.reorderLevel || 5);
+  const isExpired = Boolean(med.expiryDate) && d < 0;
+  const isExpiring = Boolean(med.expiryDate) && d >= 0 && d <= 90;
 
-  if (d < 0 && isLow) return { label: "Expired + Low Stock", className: "status-danger" };
-  if (d < 0) return { label: "Expired", className: "status-danger" };
-  if (d <= 90 && isLow) return { label: "Expiring Soon + Low Stock", className: "status-warning" };
-  if (d <= 90) return { label: "Expiring Soon", className: "status-warning" };
+  if (isExpired && isLow) return { label: "Expired + Low Stock", className: "status-danger" };
+  if (isExpired) return { label: "Expired", className: "status-danger" };
+  if (isExpiring && isLow) return { label: "Expiring Soon + Low Stock", className: "status-warning" };
+  if (isExpiring) return { label: "Expiring Soon", className: "status-warning" };
   if (isLow) return { label: "Low Stock", className: "status-warning" };
 
   return { label: "OK", className: "status-success" };
@@ -1849,19 +1632,16 @@ function medicineStatus(med) {
 
 function printHtmlDocument(html) {
   const frame = document.createElement("iframe");
-
   frame.style.position = "fixed";
   frame.style.right = "0";
   frame.style.bottom = "0";
   frame.style.width = "0";
   frame.style.height = "0";
   frame.style.border = "0";
-
   document.body.appendChild(frame);
 
   const frameWindow = frame.contentWindow;
   const frameDocument = frameWindow.document;
-
   frameDocument.open();
   frameDocument.write(html);
   frameDocument.close();
@@ -1873,12 +1653,10 @@ function printHtmlDocument(html) {
   };
 
   frameWindow.addEventListener("afterprint", removeFrame);
-
   setTimeout(() => {
     frameWindow.focus();
     frameWindow.print();
   }, 300);
-
   setTimeout(removeFrame, 8000);
 }
 
@@ -1888,37 +1666,19 @@ async function buildDashboardReport() {
   const today = todayISO();
 
   const todaySales = sales.filter(sale => isSameDay(sale.createdAt, today));
-  const lowStock = medicines.filter(med => Number(med.quantity) <= Number(med.reorderLevel || 5));
-  const expiring = medicines.filter(med => daysUntil(med.expiryDate) >= 0 && daysUntil(med.expiryDate) <= 90);
-  const expired = medicines.filter(med => daysUntil(med.expiryDate) < 0);
+  const lowStock = medicines.filter(med => Number(med.quantity || 0) <= Number(med.reorderLevel || 5));
+  const expiring = medicines.filter(med => med.expiryDate && daysUntil(med.expiryDate) >= 0 && daysUntil(med.expiryDate) <= 90);
+  const expired = medicines.filter(med => med.expiryDate && daysUntil(med.expiryDate) < 0);
 
   const todaySalesTotal = todaySales.reduce((sum, sale) => sum + Number(sale.total || 0), 0);
   const todayProfitTotal = todaySales.reduce((sum, sale) => sum + Number(sale.profit || 0), 0);
   const stockValue = medicines.reduce((sum, med) => sum + (Number(med.quantity || 0) * Number(med.buyingPrice || 0)), 0);
 
-  const recentSales = [...sales]
-    .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))
-    .slice(0, 15);
-
+  const recentSales = [...sales].sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt)).slice(0, 15);
   const alerts = [
-    ...expired.map(med => ({
-      medicine: med.name,
-      batch: med.batchNo,
-      detail: `Expired on ${med.expiryDate}`,
-      status: "Expired"
-    })),
-    ...expiring.map(med => ({
-      medicine: med.name,
-      batch: med.batchNo,
-      detail: `Expires on ${med.expiryDate}`,
-      status: "Expiring Soon"
-    })),
-    ...lowStock.map(med => ({
-      medicine: med.name,
-      batch: med.batchNo,
-      detail: `${med.quantity} left. Reorder level is ${med.reorderLevel || 5}`,
-      status: "Low Stock"
-    }))
+    ...expired.map(med => ({ medicine: med.name, detail: `Expired on ${med.expiryDate}`, status: "Expired" })),
+    ...expiring.map(med => ({ medicine: med.name, detail: `Expires on ${med.expiryDate}`, status: "Expiring Soon" })),
+    ...lowStock.map(med => ({ medicine: med.name, detail: `${Number(med.quantity || 0)} left. Reorder level is ${med.reorderLevel || 5}`, status: "Low Stock" }))
   ].slice(0, 25);
 
   const body = `
@@ -1932,7 +1692,6 @@ async function buildDashboardReport() {
       ${summaryCard("Stock Value", formatMoney(stockValue))}
       ${summaryCard("Report Date", today)}
     </div>
-
     <section class="section">
       <h3>Recent Sales</h3>
       ${makeTable(
@@ -1950,15 +1709,13 @@ async function buildDashboardReport() {
         "No sales have been recorded yet."
       )}
     </section>
-
     <section class="section">
       <h3>Priority Stock Alerts</h3>
       ${makeTable(
-        ["Medicine", "Batch", "Alert", "Status"],
+        ["Medicine", "Alert", "Status"],
         alerts.map(alert => `
           <tr>
             <td>${escapeHtml(alert.medicine)}</td>
-            <td>${escapeHtml(alert.batch)}</td>
             <td>${escapeHtml(alert.detail)}</td>
             <td><span class="status">${escapeHtml(alert.status)}</span></td>
           </tr>
@@ -1973,76 +1730,52 @@ async function buildDashboardReport() {
 
 async function buildInventoryReport() {
   const medicines = await getAll(STORE.medicines);
-  const suppliers = await getAll(STORE.suppliers);
-
-  const search = $("medicineSearch")?.value.toLowerCase().trim() || "";
+  const search = ($("medicineSearch")?.value || "").toLowerCase().trim();
   const filter = $("medicineStatusFilter")?.value || "all";
 
   let filtered = medicines.filter(med => {
-    const supplier = supplierName(suppliers, med.supplierId).toLowerCase();
-    const haystack = `${med.name} ${med.genericName} ${med.batchNo} ${med.category} ${supplier}`.toLowerCase();
+    const haystack = `${med.name || ""} ${med.genericName || ""} ${med.category || ""}`.toLowerCase();
     return haystack.includes(search);
   });
 
   filtered = filtered.filter(med => {
     const d = daysUntil(med.expiryDate);
-    const isLow = Number(med.quantity) <= Number(med.reorderLevel || 5);
-
+    const isLow = Number(med.quantity || 0) <= Number(med.reorderLevel || 5);
     if (filter === "low") return isLow;
-    if (filter === "expiring") return d >= 0 && d <= 90;
-    if (filter === "expired") return d < 0;
-
+    if (filter === "expiring") return med.expiryDate && d >= 0 && d <= 90;
+    if (filter === "expired") return med.expiryDate && d < 0;
     return true;
   });
 
-  filtered.sort((a, b) => a.name.localeCompare(b.name));
-
-  const totalQty = filtered.reduce((sum, med) => sum + Number(med.quantity || 0), 0);
-  const stockValue = filtered.reduce((sum, med) => sum + (Number(med.quantity || 0) * Number(med.buyingPrice || 0)), 0);
-  const retailValue = filtered.reduce((sum, med) => sum + (Number(med.quantity || 0) * Number(med.sellingPrice || 0)), 0);
-  const lowStockCount = filtered.filter(med => Number(med.quantity) <= Number(med.reorderLevel || 5)).length;
+  filtered.sort((a, b) => String(a.name || "").localeCompare(String(b.name || "")));
 
   const body = `
     <div class="summary-grid">
       ${summaryCard("Filtered Medicines", filtered.length)}
-      ${summaryCard("Total Quantity", totalQty)}
-      ${summaryCard("Low Stock Items", lowStockCount)}
-      ${summaryCard("Stock Cost Value", formatMoney(stockValue))}
-      ${summaryCard("Retail Stock Value", formatMoney(retailValue))}
       ${summaryCard("Search Applied", search || "None")}
       ${summaryCard("Filter Applied", filter)}
       ${summaryCard("Generated", todayISO())}
     </div>
-
     <section class="section">
       <h3>Medicine Inventory Listing</h3>
       ${makeTable(
-        ["Medicine", "Generic", "Batch", "Category", "Supplier", "Qty", "Buy", "Sell", "Wholesale", "Expiry", "Status"],
-        filtered.map(med => {
-          const status = medicineStatus(med);
-
-          return `
-            <tr>
-              <td>${escapeHtml(med.name)}</td>
-              <td>${escapeHtml(med.genericName || "")}</td>
-              <td>${escapeHtml(med.batchNo || "")}</td>
-              <td>${escapeHtml(med.category || "")}</td>
-              <td>${escapeHtml(supplierName(suppliers, med.supplierId))}</td>
-              <td class="text-right">${Number(med.quantity || 0)}</td>
-              <td class="text-right">${formatMoney(med.buyingPrice)}</td>
-              <td class="text-right">${formatMoney(med.sellingPrice)}</td>
-              <td class="text-right">${formatMoney(med.wholesalePrice)}</td>
-              <td>${escapeHtml(med.expiryDate || "")}</td>
-              <td><span class="status ${status.className}">${escapeHtml(status.label)}</span></td>
-            </tr>
-          `;
-        }),
+        ["Medicine", "Generic", "Category", "Buy", "Sell", "Wholesale"],
+        filtered.map(med => `
+          <tr>
+            <td>${escapeHtml(med.name)}</td>
+            <td>${escapeHtml(med.genericName || "")}</td>
+            <td>${escapeHtml(med.category || "")}</td>
+            <td class="text-right">${formatMoney(med.buyingPrice)}</td>
+            <td class="text-right">${formatMoney(med.sellingPrice)}</td>
+            <td class="text-right">${formatMoney(med.wholesalePrice)}</td>
+          </tr>
+        `),
         "No medicines match the selected filters."
       )}
     </section>
   `;
 
-  return reportShell("Inventory Report", "Professional stock listing with quantities, pricing, expiry, and status.", body);
+  return reportShell("Inventory Report", "Medicine catalog and pricing listing.", body);
 }
 
 async function buildSalesReport() {
@@ -2060,18 +1793,15 @@ async function buildSalesReport() {
       ${infoBox("Payment Method", paymentMethod)}
       ${infoBox("Sale Type", saleType.toUpperCase())}
     </div>
-
     <section class="section">
       <h3>Current Sale Items</h3>
       ${makeTable(
-        ["Medicine", "Batch", "Qty", "Unit Price", "Discount", "Line Total"],
+        ["Medicine", "Qty", "Unit Price", "Discount", "Line Total"],
         cart.map(item => {
           const lineTotal = Math.max(0, (Number(item.qty) * Number(item.sellingPrice)) - Number(item.discount || 0));
-
           return `
             <tr>
               <td>${escapeHtml(item.name)}</td>
-              <td>${escapeHtml(item.batchNo || "")}</td>
               <td class="text-right">${Number(item.qty || 0)}</td>
               <td class="text-right">${formatMoney(item.sellingPrice)}</td>
               <td class="text-right">${formatMoney(item.discount)}</td>
@@ -2081,7 +1811,6 @@ async function buildSalesReport() {
         }),
         "The cart is currently empty."
       )}
-
       <div class="totals-box">
         <div class="total-line"><span>Subtotal</span><strong>${formatMoney(subtotal)}</strong></div>
         <div class="total-line"><span>Total Discount</span><strong>${formatMoney(discount)}</strong></div>
@@ -2101,10 +1830,7 @@ async function buildPurchasesReport() {
   const supplier = suppliers.find(item => Number(item.id) === supplierId);
   const invoiceNo = $("purchaseInvoice")?.value.trim() || "Not entered";
   const currentTotal = purchaseLines.reduce((sum, item) => sum + (Number(item.qty || 0) * Number(item.unitCost || 0)), 0);
-
-  const recentPurchases = [...purchases]
-    .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))
-    .slice(0, 15);
+  const recentPurchases = [...purchases].sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt)).slice(0, 15);
 
   const body = `
     <div class="info-grid">
@@ -2112,15 +1838,15 @@ async function buildPurchasesReport() {
       ${infoBox("Invoice Number", invoiceNo)}
       ${infoBox("Current Draft Total", formatMoney(currentTotal))}
     </div>
-
     <section class="section">
       <h3>Current Purchase Lines</h3>
       ${makeTable(
-        ["Medicine", "Batch", "Qty", "Unit Cost", "Line Total"],
+        ["Medicine", "Batch", "Expiry", "Qty", "Unit Cost", "Line Total"],
         purchaseLines.map(item => `
           <tr>
             <td>${escapeHtml(item.name)}</td>
             <td>${escapeHtml(item.batchNo || "")}</td>
+            <td>${escapeHtml(item.expiryDate || "")}</td>
             <td class="text-right">${Number(item.qty || 0)}</td>
             <td class="text-right">${formatMoney(item.unitCost)}</td>
             <td class="text-right">${formatMoney(Number(item.qty || 0) * Number(item.unitCost || 0))}</td>
@@ -2128,19 +1854,16 @@ async function buildPurchasesReport() {
         `),
         "No purchase lines have been added."
       )}
-
       <div class="totals-box">
         <div class="total-line"><span>Total Cost</span><strong>${formatMoney(currentTotal)}</strong></div>
       </div>
     </section>
-
     <section class="section">
       <h3>Recent Saved Purchases</h3>
       ${makeTable(
         ["Invoice", "Supplier", "Total Cost", "Created By", "Date"],
         recentPurchases.map(purchase => {
           const purchaseSupplier = suppliers.find(s => Number(s.id) === Number(purchase.supplierId));
-
           return `
             <tr>
               <td>${escapeHtml(purchase.invoiceNo || "")}</td>
@@ -2161,7 +1884,6 @@ async function buildPurchasesReport() {
 
 async function buildSuppliersReport() {
   const suppliers = await getAll(STORE.suppliers);
-
   const body = `
     <div class="summary-grid">
       ${summaryCard("Total Suppliers", suppliers.length)}
@@ -2169,7 +1891,6 @@ async function buildSuppliersReport() {
       ${summaryCard("Generated By", currentUser?.name || "Unknown")}
       ${summaryCard("Data Source", "Local Device")}
     </div>
-
     <section class="section">
       <h3>Supplier Directory</h3>
       ${makeTable(
@@ -2186,24 +1907,20 @@ async function buildSuppliersReport() {
       )}
     </section>
   `;
-
   return reportShell("Suppliers Report", "Professional supplier contact directory.", body);
 }
 
 async function buildReportsPageReport() {
   const reportDate = $("reportDate")?.value || todayISO();
-
   const medicines = await getAll(STORE.medicines);
   const sales = await getAll(STORE.sales);
 
   const selectedSales = sales.filter(sale => isSameDay(sale.createdAt, reportDate));
   const salesTotal = selectedSales.reduce((sum, sale) => sum + Number(sale.total || 0), 0);
   const profitTotal = selectedSales.reduce((sum, sale) => sum + Number(sale.profit || 0), 0);
-
-  const lowStock = medicines.filter(med => Number(med.quantity) <= Number(med.reorderLevel || 5));
-  const expired = medicines.filter(med => daysUntil(med.expiryDate) < 0);
-  const expiring = medicines.filter(med => daysUntil(med.expiryDate) >= 0 && daysUntil(med.expiryDate) <= 90);
-
+  const lowStock = medicines.filter(med => Number(med.quantity || 0) <= Number(med.reorderLevel || 5));
+  const expired = medicines.filter(med => med.expiryDate && daysUntil(med.expiryDate) < 0);
+  const expiring = medicines.filter(med => med.expiryDate && daysUntil(med.expiryDate) >= 0 && daysUntil(med.expiryDate) <= 90);
   const alerts = [...expired, ...expiring, ...lowStock]
     .filter((item, index, self) => index === self.findIndex(x => Number(x.id) === Number(item.id)));
 
@@ -2218,7 +1935,6 @@ async function buildReportsPageReport() {
       ${summaryCard("Expiring Soon", expiring.length)}
       ${summaryCard("Total Alerts", alerts.length)}
     </div>
-
     <section class="section">
       <h3>Sales for Selected Day</h3>
       ${makeTable(
@@ -2237,18 +1953,15 @@ async function buildReportsPageReport() {
         "No sales for the selected date."
       )}
     </section>
-
     <section class="section">
       <h3>Low Stock / Expiry Alerts</h3>
       ${makeTable(
-        ["Medicine", "Batch", "Qty", "Reorder Level", "Expiry", "Status"],
+        ["Medicine", "Qty", "Reorder Level", "Expiry", "Status"],
         alerts.map(med => {
           const status = medicineStatus(med);
-
           return `
             <tr>
               <td>${escapeHtml(med.name)}</td>
-              <td>${escapeHtml(med.batchNo || "")}</td>
               <td class="text-right">${Number(med.quantity || 0)}</td>
               <td class="text-right">${Number(med.reorderLevel || 5)}</td>
               <td>${escapeHtml(med.expiryDate || "")}</td>
@@ -2260,21 +1973,14 @@ async function buildReportsPageReport() {
       )}
     </section>
   `;
-
   return reportShell("Daily Reports", "Sales, profit, low stock, expiry, and performance report.", body);
 }
 
 async function buildUsersReport() {
   if (!requireRole(["Administrator", "Director"])) {
-    return reportShell(
-      "Users Report",
-      "Access restricted.",
-      `<div class="empty-box">Only Admin users can print the Users & Roles report.</div>`
-    );
+    return reportShell("Users Report", "Access restricted.", `<div class="empty-box">Only Admin users can print the Users & Roles report.</div>`);
   }
-
   const users = await getAll(STORE.users);
-
   const activeUsers = users.filter(user => user.isActive).length;
   const inactiveUsers = users.length - activeUsers;
 
@@ -2285,7 +1991,6 @@ async function buildUsersReport() {
       ${summaryCard("Inactive Users", inactiveUsers)}
       ${summaryCard("Generated", todayISO())}
     </div>
-
     <section class="section">
       <h3>Users & Roles</h3>
       ${makeTable(
@@ -2303,7 +2008,6 @@ async function buildUsersReport() {
       )}
     </section>
   `;
-
   return reportShell("Users & Roles Report", "User access list without passwords or sensitive authentication data.", body);
 }
 
@@ -2326,7 +2030,6 @@ async function buildBackupReport() {
       ${summaryCard("Generated", todayISO())}
       ${summaryCard("Storage", "Browser / Device")}
     </div>
-
     <section class="section">
       <h3>Backup Summary</h3>
       <div class="empty-box">
@@ -2334,7 +2037,6 @@ async function buildBackupReport() {
       </div>
     </section>
   `;
-
   return reportShell("Backup & Restore Report", "Local data counts and backup readiness summary.", body);
 }
 
@@ -2348,43 +2050,24 @@ async function buildProfessionalPageReport(pageId) {
   if (pageId === "users") return buildUsersReport();
   if (pageId === "backup") return buildBackupReport();
 
-  return reportShell(
-    "My Rx Report",
-    "Professional printable report.",
-    `<div class="empty-box">No printable report is configured for this page.</div>`
-  );
+  return reportShell("My Rx Report", "Professional printable report.", `<div class="empty-box">No printable report is configured for this page.</div>`);
 }
 
 async function printOrExportPagePdf() {
   try {
     const activePage = document.querySelector(".page.active");
-
     if (!activePage) {
       showToast("No page to print.");
       return;
     }
-
     const pageId = activePage.id || "page";
     const html = await buildProfessionalPageReport(pageId);
-
     printHtmlDocument(html);
     showToast("Professional report prepared for printing.");
   } catch (error) {
     console.error("Professional page print failed:", error);
     showToast("Could not prepare professional report.");
   }
-}
-
-async function printOrExportPdf() {
-  const receiptContent = $("receiptContent");
-
-  if (!receiptContent || !receiptContent.innerHTML.trim()) {
-    showToast("No receipt to print.");
-    return;
-  }
-
-  printElement("receiptContent", "Sales Receipt");
-  showToast("Receipt prepared for printing.");
 }
 
 async function exportBackup() {
@@ -2397,10 +2080,7 @@ async function exportBackup() {
 async function importBackup(file) {
   if (!file) return;
 
-  const confirmed = confirm(
-    "Importing this backup will replace the current data on this device. Continue?"
-  );
-
+  const confirmed = confirm("Importing this backup will replace the current data on this device. Continue?");
   if (!confirmed) {
     $("importBackupInput").value = "";
     return;
@@ -2408,18 +2088,12 @@ async function importBackup(file) {
 
   try {
     const text = await file.text();
-
-    if (!text.trim()) {
-      throw new Error("Backup file is empty.");
-    }
-
+    if (!text.trim()) throw new Error("Backup file is empty.");
     const backup = JSON.parse(text);
-
     await importAllData(backup);
 
     currentUser = null;
     localStorage.removeItem(SESSION_KEY);
-
     showToast("Backup imported successfully. Please sign in again.");
 
     setTimeout(() => {
@@ -2444,14 +2118,15 @@ async function refreshAll() {
   await renderDashboardMedicineSearch();
   renderCart();
   renderPurchaseLines();
+  await renderPurchasesHistory();
   await renderPurchaseExpenses();
 }
+
 function printElement(elementId, title = "Print") {
   const element = $(elementId);
   if (!element) return showToast("Nothing to print.");
 
   const printWindow = window.open("", "_blank", "width=900,height=1100");
-
   printWindow.document.write(`
     <!DOCTYPE html>
     <html>
@@ -2459,56 +2134,19 @@ function printElement(elementId, title = "Print") {
         <title>${title}</title>
         <link rel="stylesheet" href="./src/styles.css" />
         <style>
-          @page {
-            size: A4;
-            margin: 0;
-          }
-
-          html,
-          body {
-            margin: 0 !important;
-            padding: 0 !important;
-            background: white !important;
-          }
-
-          body {
-            padding: 10mm !important;
-            font-family: Arial, sans-serif;
-          }
-
-          .no-print,
-          button {
-            display: none !important;
-          }
-
-          a[href]::after {
-            content: "" !important;
-          }
-
-          .panel,
-          .receipt-content {
-            box-shadow: none !important;
-            border: none !important;
-          }
-
-          .table-wrap {
-            overflow: visible !important;
-          }
-
-          table {
-            page-break-inside: auto;
-          }
-
-          tr {
-            page-break-inside: avoid;
-            page-break-after: auto;
-          }
+          @page { size: A4; margin: 0; }
+          html, body { margin: 0 !important; padding: 0 !important; background: white !important; }
+          body { padding: 10mm !important; font-family: Arial, sans-serif; }
+          .no-print, button { display: none !important; }
+          a[href]::after { content: "" !important; }
+          .panel, .receipt-content { box-shadow: none !important; border: none !important; }
+          .table-wrap { overflow: visible !important; }
+          table { page-break-inside: auto; }
+          tr { page-break-inside: avoid; page-break-after: auto; }
         </style>
       </head>
-
       <body>
         ${element.outerHTML}
-
         <script>
           window.onload = function () {
             setTimeout(function () {
@@ -2520,7 +2158,6 @@ function printElement(elementId, title = "Print") {
       </body>
     </html>
   `);
-
   printWindow.document.close();
 }
 
@@ -2537,14 +2174,12 @@ async function markReceiptAsPrinted() {
     sale.updatedAt = new Date().toISOString();
 
     await putRecord(STORE.sales, sale);
-
     await writeAudit("receipt_printed_sale_locked", {
       saleId: sale.id,
       receiptNo: sale.receiptNo,
       printedBy: currentUser?.name,
       role: currentUser?.role
     });
-
     currentReceiptSale = sale;
   }
 }
@@ -2580,18 +2215,12 @@ async function savePurchaseExpense(event) {
     updatedAt: new Date().toISOString()
   });
 
-  await writeAudit("expense_created", {
-    category,
-    amount,
-    expenseDate
-  });
-
+  await writeAudit("expense_created", { category, amount, expenseDate });
   $("expenseForm").reset();
   $("expenseDate").value = formatDateDisplay(new Date().toISOString());
 
   showToast("Expense saved.");
   await refreshAll();
-
   if (typeof queueAutoSync === "function") {
     queueAutoSync();
   }
@@ -2607,7 +2236,6 @@ async function renderPurchaseExpenses() {
   });
 
   const total = sorted.reduce((sum, item) => sum + Number(item.amount || 0), 0);
-
   $("purchaseExpensesTotal").textContent = formatMoney(total);
 
   $("purchaseExpensesTable").innerHTML = sorted.length ? sorted.map(expense => `
@@ -2619,9 +2247,7 @@ async function renderPurchaseExpenses() {
       <td>${formatMoney(expense.amount)}</td>
       <td>
         ${requireRole(["Administrator", "Director"]) ? `
-          <button class="table-btn danger" data-action="delete-expense" data-id="${expense.id}">
-            Delete
-          </button>
+          <button class="table-btn danger" data-action="delete-expense" data-id="${expense.id}">Delete</button>
         ` : ""}
       </td>
     </tr>
@@ -2642,20 +2268,14 @@ async function deletePurchaseExpense(id) {
   }
 
   await deleteRecord(STORE.expenses, id);
-
-  await writeAudit("expense_deleted", {
-    id,
-    category: expense.category,
-    amount: expense.amount
-  });
-
+  await writeAudit("expense_deleted", { id, category: expense.category, amount: expense.amount });
   showToast("Expense deleted.");
   await refreshAll();
-
   if (typeof queueAutoSync === "function") {
     queueAutoSync();
   }
 }
+
 function bindEvents() {
   $("loginForm").addEventListener("submit", async event => {
     event.preventDefault();
@@ -2665,9 +2285,9 @@ function bindEvents() {
       showToast(error.message);
     }
   });
+
   const mobileMenuHeader = document.querySelector(".logo-sidebar-card");
   const sidebar = document.querySelector(".sidebar");
-
   if (mobileMenuHeader && sidebar) {
     mobileMenuHeader.addEventListener("click", () => {
       if (window.innerWidth <= 768) {
@@ -2675,15 +2295,15 @@ function bindEvents() {
       }
     });
   }
+
   $("logoutBtn").addEventListener("click", logout);
 
   document.querySelectorAll(".nav-link").forEach(button => {
     button.addEventListener("click", () => {
       showPage(button.dataset.page);
-
-      const sidebar = document.querySelector(".sidebar");
-      if (window.innerWidth <= 768 && sidebar) {
-        sidebar.classList.remove("mobile-menu-open");
+      const sb = document.querySelector(".sidebar");
+      if (window.innerWidth <= 768 && sb) {
+        sb.classList.remove("mobile-menu-open");
       }
     });
   });
@@ -2702,10 +2322,8 @@ function bindEvents() {
 
   document.addEventListener("keydown", event => {
     if (event.key !== "Escape") return;
-
     const openModals = Array.from(document.querySelectorAll(".modal:not(.hidden)"));
     const activeModal = openModals.at(-1);
-
     if (activeModal) {
       closeModal(activeModal.id);
     }
@@ -2719,13 +2337,22 @@ function bindEvents() {
   $("addSupplierBtn").addEventListener("click", () => openSupplierForm());
   $("supplierForm").addEventListener("submit", saveSupplier);
 
+  $("saleMedicineSelect")?.addEventListener("change", syncSalePriceInputFromSelection);
+  $("saleType")?.addEventListener("change", syncSalePriceInputFromSelection);
+
+  $("cartTable")?.addEventListener("change", event => {
+    const input = event.target.closest(".cart-price-input");
+    if (!input) return;
+    updateCartItemPrice(Number(input.dataset.cartPriceIndex), input.value);
+  });
+
   $("addToCartBtn").addEventListener("click", addToCart);
   $("completeSaleBtn").addEventListener("click", completeSale);
   $("clearCartBtn").addEventListener("click", () => { cart = []; renderCart(); });
+
   $("printReceiptBtn").addEventListener("click", async () => {
     await markReceiptAsPrinted();
     printElement("receiptContent", "Sales Receipt");
-
     if (isDispenser()) {
       showToast("Receipt printed. This sale is now locked.");
     }
@@ -2736,16 +2363,19 @@ function bindEvents() {
   $("addPurchaseLineBtn").addEventListener("click", addPurchaseLine);
   $("completePurchaseBtn").addEventListener("click", completePurchase);
   $("clearPurchaseBtn").addEventListener("click", () => { purchaseLines = []; renderPurchaseLines(); });
+  $("refreshPurchasesHistoryBtn")?.addEventListener("click", renderPurchasesHistory);
 
   $("refreshReportsBtn").addEventListener("click", renderReports);
   $("reportDate").addEventListener("change", renderReports);
   $("exportSalesCsvBtn").addEventListener("click", exportSalesCsv);
-    const printReportBtn = $("printReportBtn");
-    if (printReportBtn) {
-      printReportBtn.addEventListener("click", () => {
-        printElement("reportPrintable", "Sales Report");
-      });
-    }
+
+  const printReportBtn = $("printReportBtn");
+  if (printReportBtn) {
+    printReportBtn.addEventListener("click", () => {
+      printElement("reportPrintable", "Sales Report");
+    });
+  }
+
   const exportPurchasesCsvBtn = $("exportPurchasesCsvBtn");
   if (exportPurchasesCsvBtn) {
     exportPurchasesCsvBtn.addEventListener("click", exportPurchasesCsv);
@@ -2798,6 +2428,7 @@ function bindEvents() {
     if (action === "delete-sale") await deleteSaleRecord(Number(id));
     if (action === "remove-cart") { cart.splice(index, 1); renderCart(); }
     if (action === "remove-purchase-line") { purchaseLines.splice(index, 1); renderPurchaseLines(); }
+    if (action === "delete-purchase") await deletePurchaseRecord(Number(id));
     if (action === "delete-expense") deletePurchaseExpense(id);
     if (action === "edit-user") openUserForm(id);
     if (action === "delete-user") deleteUser(id);
@@ -2822,7 +2453,7 @@ async function init() {
   await seedInitialData();
   bindEvents();
 
-  attachDateMask("expiryDate");
+  attachDateMask("purchaseExpiry");
   attachDateMask("reportDate");
   attachDateMask("purchaseDate");
   attachDateMask("expenseDate");
@@ -2834,12 +2465,11 @@ async function init() {
   if ($("expenseDate")) {
     $("expenseDate").value = formatDateDisplay(new Date().toISOString());
   }
-  const saved = localStorage.getItem(SESSION_KEY);
 
+  const saved = localStorage.getItem(SESSION_KEY);
   if (saved) {
     try {
       currentUser = JSON.parse(saved);
-
       if (currentUser && currentUser.id && currentUser.role) {
         showApp();
       } else {
@@ -2859,13 +2489,8 @@ async function init() {
 
 init().catch(error => {
   console.error("Startup error:", error);
-
-  const realMessage = error && error.message
-    ? error.message
-    : String(error);
-
+  const realMessage = error && error.message ? error.message : String(error);
   const toast = document.getElementById("toast");
-
   if (typeof showToast === "function" && toast) {
     showToast(realMessage);
   } else {
