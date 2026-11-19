@@ -6776,3 +6776,45 @@ body.modal-open {
   }
 }
 
+/* =========================================================
+   FIX: Purchase Summary panel overlap & column spacing
+   Paste at the very bottom of src/styles.css
+========================================================= */
+
+#purchases .sales-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1.8fr) minmax(260px, 0.8fr);
+  gap: 18px;
+  align-items: start;
+  margin-bottom: 20px;
+}
+
+#purchases .sales-layout > .panel {
+  margin-bottom: 0;
+  min-width: 0;
+  overflow: visible;
+}
+
+#purchases .checkout-panel {
+  position: relative;
+  top: 0;
+  z-index: 1;
+  width: 100%;
+  min-width: 0;
+}
+
+#purchases > .panel {
+  clear: both;
+  position: relative;
+  z-index: 1;
+}
+
+@media (max-width: 1100px) {
+  #purchases .sales-layout {
+    grid-template-columns: 1fr !important;
+  }
+
+  #purchases .checkout-panel {
+    position: static;
+  }
+}
