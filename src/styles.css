@@ -6818,3 +6818,49 @@ body.modal-open {
     position: static;
   }
 }
+
+/* =========================================================
+   FIX: Mobile Checkout & Purchase Summary panel overlap
+   Paste at the very bottom of src/styles.css
+========================================================= */
+
+@media (max-width: 900px) {
+  #sales .sales-layout,
+  #purchases .sales-layout {
+    display: flex !important;
+    flex-direction: column !important;
+    gap: 16px !important;
+    margin-bottom: 18px !important;
+  }
+
+  #sales .sales-layout > .panel,
+  #purchases .sales-layout > .panel {
+    position: relative !important;
+    top: auto !important;
+    left: auto !important;
+    right: auto !important;
+    z-index: 1 !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    min-width: 0 !important;
+    margin-bottom: 0 !important;
+    overflow: visible !important;
+  }
+
+  #sales .checkout-panel,
+  #purchases .checkout-panel {
+    position: static !important;
+    top: auto !important;
+    z-index: 2 !important;
+    height: auto !important;
+  }
+
+  #sales > .panel:not(.sales-layout),
+  #purchases > .panel:not(.sales-layout) {
+    position: relative !important;
+    z-index: 1 !important;
+    clear: both !important;
+    width: 100% !important;
+    margin-top: 0 !important;
+  }
+}
