@@ -729,6 +729,38 @@
     </div>
   </div>
   
+
+  <div id="editSaleModal" class="modal hidden" role="dialog" aria-modal="true" aria-hidden="true" aria-labelledby="editSaleModalTitle">
+    <div class="modal-card large">
+      <div class="modal-header">
+        <h2 id="editSaleModalTitle">Edit Sale</h2>
+        <button type="button" class="modal-close" data-close="editSaleModal">×</button>
+      </div>
+      <form id="editSaleForm" class="form-grid">
+        <input type="hidden" id="editSaleId" />
+        <div class="form-grid three">
+          <div><label>Customer / Patient</label><input id="editSaleCustomer" /></div>
+          <div><label>Payment Method</label><select id="editSalePaymentMethod"><option>Cash</option><option>Mobile Money</option><option>Card</option><option>Credit</option></select></div>
+          <div><label>Sale Type</label><select id="editSaleType"><option value="retail">Retail</option><option value="wholesale">Wholesale</option></select></div>
+        </div>
+        <div class="sale-add-row">
+          <select id="editSaleAddMedicineSelect"></select>
+          <select id="editSaleAddBatchSelect" title="Select batch"></select>
+          <button type="button" id="editSaleAddItemBtn" class="secondary-btn">Add Item</button>
+        </div>
+        <div class="table-wrap"><table><thead><tr><th>Medicine</th><th>Batch</th><th>Qty</th><th>Unit Price</th><th>Discount</th><th>Total</th><th></th></tr></thead><tbody id="editSaleLinesTable"></tbody></table></div>
+        <div class="form-grid four">
+          <div><label>Subtotal</label><input id="editSaleSubtotalDisplay" readonly /></div>
+          <div><label>Discount</label><input id="editSaleDiscountDisplay" readonly /></div>
+          <div><label>Total</label><input id="editSaleTotalDisplay" readonly /></div>
+          <div><label>Amount Paid</label><input id="editSaleAmountPaid" type="number" min="0" step="any" /></div>
+          <div><label>Change</label><input id="editSaleChangeGiven" readonly /></div>
+        </div>
+        <div class="form-actions"><button type="button" class="ghost-btn" data-close="editSaleModal">Cancel</button><button type="submit" class="primary-btn">Save Sale Changes</button></div>
+      </form>
+    </div>
+  </div>
+
   <div id="editPurchaseModal" class="modal hidden" role="dialog" aria-modal="true" aria-hidden="true" aria-labelledby="editPurchaseModalTitle">
     <div class="modal-card large">
       <div class="modal-header">
