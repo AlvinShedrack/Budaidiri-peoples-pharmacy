@@ -1,6 +1,6 @@
 {
   "name": "budadiri-peoples-pharmacy",
-  "version": "1.0.16",
+  "version": "1.0.17",
   "description": "Offline pharmacy inventory, sales, purchases, reports, and desktop installer software.",
   "main": "electron/main.js",
   "scripts": {
