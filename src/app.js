@@ -651,7 +651,7 @@ async function addItemToEditSaleModal() {
   const medicineId = Number(medSelect.value);
   if (!medicineId) return showToast("Select a medicine to add.");
 
-  const med = await getById(STORE.medicines, medicineId);
+  const med = await getById(STORE.medicines, Number(medicineId));
   if (!med) return showToast("Medicine not found.");
   if (med.expiryDate && daysUntil(med.expiryDate) < 0) return showToast("Cannot add expired medicine.");
 
@@ -673,7 +673,7 @@ async function addItemToEditSaleModal() {
 
   const nextIdx = tbody.querySelectorAll("tr").length;
   const newLine = {
-    medicineId: med.id,
+    medicineId: Number(med.id),
     name: med.name,
     batchId: chosenBatch ? String(chosenBatch.batchId || "") : "",
     batchNo: chosenBatch ? (chosenBatch.batchNo || "") : (med.batchNo || ""),
@@ -726,7 +726,7 @@ async function saveEditedSale(event) {
     const orig = oldLines[origIndex] || {};
     return {
       ...orig,
-      medicineId: orig.medicineId || (row.dataset.medicineId ? Number(row.dataset.medicineId) : undefined),
+      medicineId: Number(orig.medicineId ?? row.dataset.medicineId) || undefined,
       name: orig.name || row.dataset.itemName || "Item",
       batchId: orig.batchId ?? (row.dataset.batchId || ""),
       batchNo: orig.batchNo ?? (row.dataset.batchNo || ""),
@@ -1019,7 +1019,7 @@ async function saveMedicine(event) {
     return;
   }
 
-  const id = $("medicineId").value;
+  const id = $("medicineId").value ? Number($("medicineId").value) : null;
   const existing = id ? await getById(STORE.medicines, id) : null;
   const record = {
     ...(existing || {}),
@@ -1142,7 +1142,7 @@ async function saveSupplier(event) {
   event.preventDefault();
   if (!requireRole(["Administrator", "Director"])) return showToast("Not allowed.");
 
-  const id = $("supplierId").value;
+  const id = $("supplierId").value ? Number($("supplierId").value) : null;
   const existing = id ? await getById(STORE.suppliers, id) : null;
   const record = {
     ...(existing || {}),
@@ -1190,7 +1190,7 @@ async function addToCart() {
 
   if (!medicineId || qty <= 0) return showToast("Select medicine and quantity.");
 
-  const med = await getById(STORE.medicines, medicineId);
+  const med = await getById(STORE.medicines, Number(medicineId));
   if (!med) return showToast("Medicine not found.");
   if (med.expiryDate && daysUntil(med.expiryDate) < 0) return showToast("Cannot sell expired medicine.");
 
@@ -1533,7 +1533,7 @@ async function addPurchaseLine() {
 
   if (!medicineId || qty <= 0 || unitCost < 0) return showToast("Select medicine, quantity, and unit cost.");
 
-  const med = await getById(STORE.medicines, medicineId);
+  const med = await getById(STORE.medicines, Number(medicineId));
   if (!med) return showToast("Medicine not found.");
 
   purchaseLines.push({
@@ -1854,9 +1854,9 @@ async function saveEditedPurchase(event) {
   for (let i = 0; i < Math.max(oldLines.length, updatedLines.length); i++) {
     const oldL = oldLines[i];
     const newL = updatedLines[i];
-    const medId = newL?.medicineId || oldL?.medicineId;
-    if (!medId) continue;
-
+    const medIdRaw = newL?.medicineId ?? oldL?.medicineId;
+    const medId = Number(medIdRaw);
+    if (!Number.isFinite(medId) || medId <= 0) continue;
     const med = await getById(STORE.medicines, medId);
     if (!med) continue;
 
@@ -3080,10 +3080,10 @@ function bindEvents() {
     const id = target.dataset.id;
     const index = Number(target.dataset.index);
 
-    if (action === "edit-medicine") openMedicineForm(id);
-    if (action === "delete-medicine") deleteMedicine(id);
-    if (action === "edit-supplier") openSupplierForm(id);
-    if (action === "delete-supplier") deleteSupplier(id);
+    if (action === "edit-medicine") await openMedicineForm(Number(id));
+    if (action === "delete-medicine") await deleteMedicine(Number(id));
+    if (action === "edit-supplier") await openSupplierForm(Number(id));
+    if (action === "delete-supplier") await deleteSupplier(Number(id));
     if (action === "view-receipt") await openSaleReceiptById(Number(id));
     if (action === "edit-sale") await openEditSaleModal(Number(id));
     if (action === "remove-edit-sale-line") {
