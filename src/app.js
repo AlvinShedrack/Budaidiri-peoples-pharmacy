@@ -495,7 +495,6 @@ async function renderSalesHistory() {
 
   $("salesHistoryTable").innerHTML = history.length
     ? history.map(sale => {
-      const isEditing = editingSaleId === sale.id;
       const createdAt = sale.createdAt ? new Date(sale.createdAt).toLocaleString() : "";
       const customerName = escapeHtml(sale.customerName || "Walk-in customer");
       const paymentMethod = escapeHtml(sale.paymentMethod || "Cash");
@@ -503,38 +502,12 @@ async function renderSalesHistory() {
       const total = Number(sale.total || 0);
       const amountPaid = Number(sale.amountPaid || 0);
       const changeGiven = Number(sale.changeGiven || Math.max(0, amountPaid - total));
-
-      if (isEditing) {
-        return `
-          <tr data-id="${sale.id}">
-            <td>${escapeHtml(sale.receiptNo || String(sale.id))}</td>
-            <td><input class="table-input" name="customerName" value="${customerName}" /></td>
-            <td>
-              <select class="table-input" name="paymentMethod">
-                ${["Cash", "Mobile Money", "Card", "Credit"].map(method => `<option value="${method}" ${method === paymentMethod ? "selected" : ""}>${method}</option>`).join("")}
-              </select>
-            </td>
-            <td>
-              <select class="table-input" name="saleType">
-                ${["retail", "wholesale"].map(type => `<option value="${type}" ${type === saleType ? "selected" : ""}>${type}</option>`).join("")}
-              </select>
-            </td>
-            <td><input class="table-input" type="number" min="0" step="0.01" name="total" value="${total.toFixed(2)}" /></td>
-            <td><input class="table-input" type="number" min="0" step="0.01" name="amountPaid" value="${amountPaid.toFixed(2)}" /></td>
-            <td><input class="table-input" type="number" min="0" step="0.01" name="changeGiven" value="${changeGiven.toFixed(2)}" /></td>
-            <td>${createdAt}</td>
-            <td class="actions-cell">
-              <button class="table-btn secondary" data-action="save-sale" data-id="${sale.id}">Save</button>
-              <button class="table-btn ghost" data-action="cancel-sale" data-id="${sale.id}">Cancel</button>
-            </td>
-          </tr>
-        `;
-      }
+      const linesCount = Array.isArray(sale.lines) ? sale.lines.length : 0;
 
       return `
         <tr data-id="${sale.id}">
           <td>${escapeHtml(sale.receiptNo || String(sale.id))}</td>
-          <td>${customerName}</td>
+          <td>${customerName}<br><span class="muted">${linesCount} item(s)</span></td>
           <td>${paymentMethod}</td>
           <td>${saleType}</td>
           <td>${formatMoney(total)}</td>
@@ -543,7 +516,7 @@ async function renderSalesHistory() {
           <td>${createdAt}</td>
           <td class="actions-cell">
             <button class="table-btn" data-action="view-receipt" data-id="${sale.id}">Receipt / Reprint</button>
-            <button class="table-btn secondary" data-action="edit-sale" data-id="${sale.id}">Edit</button>
+            <button class="table-btn secondary" data-action="edit-sale" data-id="${sale.id}">Edit Items</button>
             <button class="table-btn danger" data-action="delete-sale" data-id="${sale.id}">Delete</button>
           </td>
         </tr>
@@ -558,33 +531,299 @@ async function openSaleReceiptById(saleId) {
   showReceipt(sale);
 }
 
-async function saveSaleEdits(saleId) {
-  const row = document.querySelector(`#salesHistoryTable tr[data-id="${saleId}"]`);
-  if (!row) return;
+function recalcEditSaleModalTotals() {
+  const rows = document.querySelectorAll("#editSaleLinesTable tr");
+  let subtotal = 0;
+  let totalDiscount = 0;
 
+  rows.forEach(row => {
+    const qty = Math.max(0, Number(row.querySelector('[name="saleLineQty"]')?.value || 0));
+    const unitPrice = Math.max(0, Number(row.querySelector('[name="saleLinePrice"]')?.value || 0));
+    const lineDiscount = Math.max(0, Number(row.querySelector('[name="saleLineDiscount"]')?.value || 0));
+    const lineTotal = Math.max(0, (qty * unitPrice) - lineDiscount);
+
+    subtotal += qty * unitPrice;
+    totalDiscount += lineDiscount;
+
+    const totalCell = row.querySelector(".edit-sale-line-total");
+    if (totalCell) totalCell.textContent = formatMoney(lineTotal);
+  });
+
+  const grandTotal = Math.max(0, subtotal - totalDiscount);
+  const amountPaid = Math.max(0, Number($("editSaleAmountPaid")?.value || 0));
+  const changeGiven = Math.max(0, amountPaid - grandTotal);
+
+  if ($("editSaleSubtotalDisplay")) $("editSaleSubtotalDisplay").value = formatMoney(subtotal);
+  if ($("editSaleDiscountDisplay")) $("editSaleDiscountDisplay").value = formatMoney(totalDiscount);
+  if ($("editSaleTotalDisplay")) $("editSaleTotalDisplay").value = formatMoney(grandTotal);
+  if ($("editSaleChangeGiven")) $("editSaleChangeGiven").value = changeGiven.toFixed(0);
+}
+
+async function populateEditSaleAddMedicineOptions(selectedMedId = null) {
+  const medSelect = $("editSaleAddMedicineSelect");
+  if (!medSelect) return;
+
+  const medicines = await getAll(STORE.medicines);
+  const sellable = medicines
+    .filter(med => Number(med.quantity || 0) > 0 && (!med.expiryDate || daysUntil(med.expiryDate) >= 0))
+    .sort((a, b) => String(a.name || "").localeCompare(String(b.name || "")));
+
+  medSelect.innerHTML = sellable.length
+    ? sellable.map(med => `<option value="${med.id}">${escapeHtml(med.name)} | Qty ${Number(med.quantity || 0)} | ${formatMoney(med.sellingPrice)}</option>`).join("")
+    : `<option value="">No sellable medicine available</option>`;
+
+  if (selectedMedId && sellable.some(m => Number(m.id) === Number(selectedMedId))) {
+    medSelect.value = String(selectedMedId);
+  }
+
+  await populateEditSaleAddBatchOptions();
+}
+
+async function populateEditSaleAddBatchOptions() {
+  const medSelect = $("editSaleAddMedicineSelect");
+  const batchSelect = $("editSaleAddBatchSelect");
+  if (!medSelect || !batchSelect) return;
+
+  const medId = Number(medSelect.value);
+  if (!medId) {
+    batchSelect.innerHTML = `<option value="">No batch</option>`;
+    return;
+  }
+
+  const med = await getById(STORE.medicines, medId);
+  if (!med) {
+    batchSelect.innerHTML = `<option value="">No batch</option>`;
+    return;
+  }
+
+  const batches = getMedicineBatches(med).filter(b => {
+    const notExpired = !b.expiryDate || daysUntil(b.expiryDate) >= 0;
+    return Number(b.quantity || 0) > 0 && notExpired;
+  });
+
+  if (!batches.length) {
+    batchSelect.innerHTML = `<option value="">Auto / General Stock (${Number(med.quantity || 0)})</option>`;
+    return;
+  }
+
+  batchSelect.innerHTML = batches.map((b, idx) => {
+    const label = [
+      b.batchNo || `Batch #${idx + 1}`,
+      `Qty: ${Number(b.quantity || 0)}`,
+      b.expiryDate ? `Exp: ${formatDateDisplay(b.expiryDate)}` : "",
+      `Cost: ${formatMoney(b.unitCost || 0)}`
+    ].filter(Boolean).join(" | ");
+    return `<option value="${escapeHtml(String(b.batchId ?? idx))}">${escapeHtml(label)}</option>`;
+  }).join("");
+}
+
+function buildEditSaleLineRow(line, idx) {
+  const qty = Number(line.qty || 0);
+  const price = Number(line.sellingPrice || 0);
+  const discount = Number(line.discount || 0);
+  const lineTotal = Math.max(0, (qty * price) - discount);
+  return `
+    <tr
+      data-line-index="${idx}"
+      data-medicine-id="${escapeHtml(String(line.medicineId || ""))}"
+      data-batch-id="${escapeHtml(String(line.batchId || ""))}"
+      data-batch-no="${escapeHtml(String(line.batchNo || ""))}"
+      data-item-name="${escapeHtml(String(line.name || "Item"))}"
+      data-buying-price="${escapeHtml(String(line.buyingPrice ?? 0))}"
+    >
+      <td><strong>${escapeHtml(line.name || "Item")}</strong></td>
+      <td>${escapeHtml(line.batchNo || "-")}</td>
+      <td><input class="table-input" type="number" min="0" step="any" name="saleLineQty" value="${qty}" /></td>
+      <td><input class="table-input" type="number" min="0" step="any" name="saleLinePrice" value="${price}" /></td>
+      <td><input class="table-input" type="number" min="0" step="any" name="saleLineDiscount" value="${discount}" /></td>
+      <td class="edit-sale-line-total">${formatMoney(lineTotal)}</td>
+      <td><button type="button" class="table-btn danger" data-action="remove-edit-sale-line" data-index="${idx}">Remove</button></td>
+    </tr>
+  `;
+}
+
+async function addItemToEditSaleModal() {
+  const medSelect = $("editSaleAddMedicineSelect");
+  const batchSelect = $("editSaleAddBatchSelect");
+  const tbody = $("editSaleLinesTable");
+  if (!medSelect || !tbody) return;
+
+  const medicineId = Number(medSelect.value);
+  if (!medicineId) return showToast("Select a medicine to add.");
+
+  const med = await getById(STORE.medicines, medicineId);
+  if (!med) return showToast("Medicine not found.");
+  if (med.expiryDate && daysUntil(med.expiryDate) < 0) return showToast("Cannot add expired medicine.");
+
+  const selectedBatchId = batchSelect?.value || "";
+  const batches = getMedicineBatches(med);
+  const chosenBatch = batches.find((b, idx) => String(b.batchId ?? idx) === selectedBatchId);
+
+  if (chosenBatch && chosenBatch.expiryDate && daysUntil(chosenBatch.expiryDate) < 0) {
+    return showToast("Cannot add from an expired batch.");
+  }
+
+  const saleType = $("editSaleType")?.value || "retail";
+  const defaultPrice = await getDefaultSalePriceForMedicine(med, saleType);
+  const costBasis = chosenBatch ? Number(chosenBatch.unitCost ?? med.buyingPrice ?? 0) : Number(med.buyingPrice || 0);
+
+  if (tbody.querySelector("td[colspan]")) {
+    tbody.innerHTML = "";
+  }
+
+  const nextIdx = tbody.querySelectorAll("tr").length;
+  const newLine = {
+    medicineId: med.id,
+    name: med.name,
+    batchId: chosenBatch ? String(chosenBatch.batchId || "") : "",
+    batchNo: chosenBatch ? (chosenBatch.batchNo || "") : (med.batchNo || ""),
+    qty: 1,
+    sellingPrice: defaultPrice,
+    buyingPrice: costBasis,
+    discount: 0
+  };
+
+  tbody.insertAdjacentHTML("beforeend", buildEditSaleLineRow(newLine, nextIdx));
+  recalcEditSaleModalTotals();
+  showToast(`Added ${med.name} to sale.`);
+}
+
+async function openEditSaleModal(saleId) {
   const sale = await getById(STORE.sales, saleId);
   if (!sale) return showToast("Sale not found.");
 
-  const customerName = row.querySelector('[name="customerName"]').value.trim();
-  const paymentMethod = row.querySelector('[name="paymentMethod"]').value;
-  const saleType = row.querySelector('[name="saleType"]').value;
-  const total = Number(row.querySelector('[name="total"]').value) || 0;
-  const amountPaid = Number(row.querySelector('[name="amountPaid"]').value) || 0;
-  const changeGiven = Number(row.querySelector('[name="changeGiven"]').value) || Math.max(0, amountPaid - total);
+  $("editSaleId").value = sale.id;
+  $("editSaleCustomer").value = sale.customerName || "Walk-in customer";
+  $("editSalePaymentMethod").value = sale.paymentMethod || "Cash";
+  $("editSaleType").value = sale.saleType || "retail";
 
-  sale.customerName = customerName || "Walk-in customer";
-  sale.paymentMethod = paymentMethod;
-  sale.saleType = saleType;
+  const lines = Array.isArray(sale.lines) ? sale.lines : [];
+  $("editSaleLinesTable").innerHTML = lines.length
+    ? lines.map((line, idx) => buildEditSaleLineRow(line, idx)).join("")
+    : `<tr><td colspan="7">No line items recorded on this sale.</td></tr>`;
+
+  await populateEditSaleAddMedicineOptions();
+
+  const computedTotal = lines.reduce((sum, l) => sum + Math.max(0, (Number(l.qty || 0) * Number(l.sellingPrice || 0)) - Number(l.discount || 0)), 0);
+  $("editSaleAmountPaid").value = Number(sale.amountPaid ?? computedTotal ?? sale.total ?? 0);
+
+  recalcEditSaleModalTotals();
+  openModal("editSaleModal");
+}
+
+async function saveEditedSale(event) {
+  event.preventDefault();
+
+  const saleId = Number($("editSaleId").value);
+  const sale = await getById(STORE.sales, saleId);
+  if (!sale) return showToast("Sale not found.");
+
+  const oldLines = Array.isArray(sale.lines) ? sale.lines : [];
+  const rows = Array.from(document.querySelectorAll("#editSaleLinesTable tr[data-line-index]"));
+
+  const updatedLines = rows.map(row => {
+    const origIndex = Number(row.dataset.lineIndex);
+    const orig = oldLines[origIndex] || {};
+    return {
+      ...orig,
+      medicineId: orig.medicineId || (row.dataset.medicineId ? Number(row.dataset.medicineId) : undefined),
+      name: orig.name || row.dataset.itemName || "Item",
+      batchId: orig.batchId ?? (row.dataset.batchId || ""),
+      batchNo: orig.batchNo ?? (row.dataset.batchNo || ""),
+      buyingPrice: orig.buyingPrice ?? Number(row.dataset.buyingPrice || 0),
+      qty: Math.max(0, Number(row.querySelector('[name="saleLineQty"]')?.value || 0)),
+      sellingPrice: Math.max(0, Number(row.querySelector('[name="saleLinePrice"]')?.value || 0)),
+      discount: Math.max(0, Number(row.querySelector('[name="saleLineDiscount"]')?.value || 0))
+    };
+  }).filter(line => Number(line.qty || 0) > 0);
+
+  // Reconcile medicine batch quantities for changed or removed items
+  const medDeltaMap = new Map();
+  for (const oldLine of oldLines) {
+    if (!oldLine.medicineId) continue;
+    const key = `${oldLine.medicineId}::${oldLine.batchId || ""}`;
+    const entry = medDeltaMap.get(key) || {
+      medicineId: oldLine.medicineId,
+      batchId: oldLine.batchId || "",
+      oldQty: 0,
+      newQty: 0
+    };
+    entry.oldQty += Number(oldLine.qty || 0);
+    medDeltaMap.set(key, entry);
+  }
+
+  for (const newLine of updatedLines) {
+    if (!newLine.medicineId) continue;
+    const key = `${newLine.medicineId}::${newLine.batchId || ""}`;
+    const entry = medDeltaMap.get(key) || {
+      medicineId: newLine.medicineId,
+      batchId: newLine.batchId || "",
+      oldQty: 0,
+      newQty: 0
+    };
+    entry.newQty += Number(newLine.qty || 0);
+    medDeltaMap.set(key, entry);
+  }
+
+  for (const entry of medDeltaMap.values()) {
+    const qtyRestoreOrDeduct = entry.oldQty - entry.newQty; // positive = return to stock, negative = deduct more
+    if (qtyRestoreOrDeduct === 0) continue;
+
+    const med = await getById(STORE.medicines, entry.medicineId);
+    if (!med) continue;
+
+    const batches = [...getMedicineBatches(med).map(b => ({ ...b }))];
+    if (entry.batchId) {
+      const target = batches.find(b => String(b.batchId) === String(entry.batchId));
+      if (target) {
+        target.quantity = Math.max(0, Number(target.quantity || 0) + qtyRestoreOrDeduct);
+      } else {
+        med.quantity = Math.max(0, Number(med.quantity || 0) + qtyRestoreOrDeduct);
+      }
+    } else if (batches.length) {
+      batches[0].quantity = Math.max(0, Number(batches[0].quantity || 0) + qtyRestoreOrDeduct);
+    } else {
+      med.quantity = Math.max(0, Number(med.quantity || 0) + qtyRestoreOrDeduct);
+    }
+
+    med.batches = batches;
+    if (batches.length) {
+      recalculateMedicineFromBatches(med);
+    }
+    med.updatedAt = new Date().toISOString();
+    await putRecord(STORE.medicines, med);
+  }
+
+  const subtotal = updatedLines.reduce((sum, l) => sum + (Number(l.qty || 0) * Number(l.sellingPrice || 0)), 0);
+  const discount = updatedLines.reduce((sum, l) => sum + Number(l.discount || 0), 0);
+  const total = Math.max(0, subtotal - discount);
+  const amountPaid = Math.max(0, Number($("editSaleAmountPaid")?.value || total));
+  const changeGiven = Math.max(0, amountPaid - total);
+  const profit = updatedLines.reduce((sum, l) => {
+    const rev = Math.max(0, (Number(l.qty || 0) * Number(l.sellingPrice || 0)) - Number(l.discount || 0));
+    const cost = Number(l.qty || 0) * Number(l.buyingPrice || 0);
+    return sum + (rev - cost);
+  }, 0);
+
+  sale.customerName = $("editSaleCustomer").value.trim() || "Walk-in customer";
+  sale.paymentMethod = $("editSalePaymentMethod").value;
+  sale.saleType = $("editSaleType").value;
+  sale.lines = updatedLines;
+  sale.subtotal = subtotal;
+  sale.discount = discount;
   sale.total = total;
   sale.amountPaid = amountPaid;
   sale.changeGiven = changeGiven;
+  sale.profit = profit;
   sale.updatedAt = new Date().toISOString();
 
   await putRecord(STORE.sales, sale);
-  editingSaleId = null;
-  showToast("Sale updated successfully.");
+  await writeAudit("sale_updated", { saleId, receiptNo: sale.receiptNo, total });
+
+  closeModal("editSaleModal");
+  showToast("Sale and items updated.");
   await refreshAll();
-  renderSalesHistory();
+  await renderSalesHistory();
   if (typeof queueAutoSync === "function") queueAutoSync();
 }
 
@@ -1432,42 +1671,110 @@ async function openPurchaseInvoiceView(id) {
   if (!purchase) return showToast("Invoice not found.");
   const suppliers = await getAll(STORE.suppliers);
 
-  $("invoiceViewModalTitle").textContent = `Invoice: ${purchase.invoiceNo || id}`;
+  const lines = Array.isArray(purchase.lines) ? purchase.lines : [];
+  const total = Number(
+    purchase.total ?? lines.reduce((sum, l) => sum + (Number(l.qty || 0) * Number(l.unitCost || 0)), 0)
+  );
+  const purchaseDateStr = purchase.purchaseDate || purchase.createdAt || "";
+
+  $("invoiceViewModalTitle").textContent = `Purchase Receipt: ${purchase.invoiceNo || id}`;
   $("invoiceViewContent").innerHTML = `
-    <div id="printableInvoiceSheet" class="panel" style="box-shadow:none;margin:0;">
-      <p><strong>Supplier:</strong> ${escapeHtml(supplierName(suppliers, purchase.supplierId))}</p>
-      <p><strong>Invoice No:</strong> ${escapeHtml(purchase.invoiceNo || "")}</p>
-      <p><strong>Purchase Date:</strong> ${escapeHtml(formatDateDisplay(purchase.purchaseDate || purchase.createdAt))}</p>
-      <p><strong>Recorded By:</strong> ${escapeHtml(purchase.createdByName || "")}</p>
-      <div class="table-wrap" style="margin-top:12px;">
+    <div id="printableInvoiceSheet" class="receipt-content">
+      <img src="${BRAND.logo}" class="receipt-watermark" alt="" />
+
+      <div class="receipt-inner">
+        <div class="receipt-brand-header">
+          <img src="${BRAND.logo}" alt="${BRAND.name}" />
+          <h2>${BRAND.name}</h2>
+          <p>${BRAND.tagline}</p>
+          <div class="receipt-contact-line">
+            ${BRAND.address}<br>
+            Tel: ${BRAND.phone}
+          </div>
+        </div>
+
+        <div class="receipt-title">Purchase Receipt</div>
+
+        <div class="receipt-meta-grid">
+          <div>
+            <strong>Invoice No.:</strong>
+            <span>${escapeHtml(purchase.invoiceNo || String(purchase.id))}</span>
+          </div>
+
+          <div>
+            <strong>Recorded By:</strong>
+            <span>${escapeHtml(purchase.createdByName || currentUser?.name || "")}</span>
+          </div>
+
+          <div>
+            <strong>Date:</strong>
+            <span>${escapeHtml(formatDateDisplay(purchaseDateStr))}</span>
+          </div>
+
+          <div>
+            <strong>Items Count:</strong>
+            <span>${lines.length}</span>
+          </div>
+
+          <div>
+            <strong>Time:</strong>
+            <span>${purchase.createdAt ? new Date(purchase.createdAt).toLocaleTimeString() : ""}</span>
+          </div>
+
+          <div>
+            <strong>Supplier:</strong>
+            <span>${escapeHtml(supplierName(suppliers, purchase.supplierId))}</span>
+          </div>
+        </div>
+
         <table>
           <thead>
             <tr>
-              <th>Medicine</th>
-              <th>Batch</th>
-              <th>Expiry</th>
+              <th>#</th>
+              <th>Item</th>
               <th>Qty</th>
               <th>Unit Cost</th>
               <th>Total</th>
             </tr>
           </thead>
+
           <tbody>
-            ${(purchase.lines || []).map(line => `
-              <tr>
-                <td>${escapeHtml(line.name)}</td>
-                <td>${escapeHtml(line.batchNo || "")}</td>
-                <td>${escapeHtml(line.expiryDate || "")}</td>
-                <td>${Number(line.qty || 0)}</td>
-                <td>${formatMoney(line.unitCost)}</td>
-                <td>${formatMoney(Number(line.qty || 0) * Number(line.unitCost || 0))}</td>
-              </tr>
-            `).join("")}
+            ${lines.map((item, index) => {
+              const qty = Number(item.qty || 0);
+              const cost = Number(item.unitCost || 0);
+              const details = [
+                item.batchNo ? `Batch: ${item.batchNo}` : "",
+                item.expiryDate ? `Exp: ${item.expiryDate}` : ""
+              ].filter(Boolean).join(" | ");
+              return `
+                <tr>
+                  <td>${index + 1}</td>
+                  <td>${escapeHtml(item.name)}${details ? `<br><span class="muted">${escapeHtml(details)}</span>` : ""}</td>
+                  <td>${qty}</td>
+                  <td>${formatMoney(cost)}</td>
+                  <td>${formatMoney(qty * cost)}</td>
+                </tr>
+              `;
+            }).join("")}
           </tbody>
         </table>
-      </div>
-      <div class="checkout-line total">
-        <span>Invoice Total</span>
-        <strong>${formatMoney(purchase.total)}</strong>
+
+        <div class="receipt-total-box">
+          <div class="receipt-total-line">
+            <span>Line Items</span>
+            <strong>${lines.length}</strong>
+          </div>
+
+          <div class="receipt-total-line grand">
+            <span>Invoice Total</span>
+            <strong>${formatMoney(total)}</strong>
+          </div>
+        </div>
+
+        <div class="receipt-footer-note">
+          ${BRAND.receiptTagline}
+          <span>${BRAND.address}</span>
+        </div>
       </div>
     </div>
   `;
@@ -2719,6 +3026,11 @@ function bindEvents() {
   $("refreshPurchasesHistoryBtn")?.addEventListener("click", renderPurchasesHistory);
   $("editPurchaseForm")?.addEventListener("submit", saveEditedPurchase);
   $("editPurchaseLinesTable")?.addEventListener("input", recalcEditPurchaseTotal);
+  $("editSaleForm")?.addEventListener("submit", saveEditedSale);
+  $("editSaleLinesTable")?.addEventListener("input", recalcEditSaleModalTotals);
+  $("editSaleAmountPaid")?.addEventListener("input", recalcEditSaleModalTotals);
+  $("editSaleAddMedicineSelect")?.addEventListener("change", populateEditSaleAddBatchOptions);
+  $("editSaleAddItemBtn")?.addEventListener("click", addItemToEditSaleModal);
   $("printInvoiceModalBtn")?.addEventListener("click", () => printElement("printableInvoiceSheet", "Purchase Invoice"));
 
   $("refreshReportsBtn").addEventListener("click", renderReports);
@@ -2773,14 +3085,11 @@ function bindEvents() {
     if (action === "edit-supplier") openSupplierForm(id);
     if (action === "delete-supplier") deleteSupplier(id);
     if (action === "view-receipt") await openSaleReceiptById(Number(id));
-    if (action === "edit-sale") {
-      editingSaleId = Number(id);
-      renderSalesHistory();
-    }
-    if (action === "save-sale") await saveSaleEdits(Number(id));
-    if (action === "cancel-sale") {
-      editingSaleId = null;
-      renderSalesHistory();
+    if (action === "edit-sale") await openEditSaleModal(Number(id));
+    if (action === "remove-edit-sale-line") {
+      const row = target.closest("tr");
+      if (row) row.remove();
+      recalcEditSaleModalTotals();
     }
     if (action === "delete-sale") await deleteSaleRecord(Number(id));
     if (action === "remove-cart") { cart.splice(index, 1); renderCart(); }
