@@ -6864,3 +6864,7 @@ body.modal-open {
     margin-top: 0 !important;
   }
 }
+.sale-add-row select#saleBatchSelect {
+  flex: 1.2;
+  min-width: 170px;
+}
