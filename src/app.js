@@ -2384,6 +2384,11 @@ function bindEvents() {
   $("exportBackupBtn").addEventListener("click", exportBackup);
   $("importBackupInput").addEventListener("change", event => importBackup(event.target.files[0]));
 
+  $("saleMedicineSelect")?.addEventListener("change", populateBatchOptionsForMedicine);
+  $("editPurchaseForm")?.addEventListener("submit", saveEditedPurchase);
+  $("editPurchaseLinesTable")?.addEventListener("input", recalcEditPurchaseTotal);
+  $("printInvoiceModalBtn")?.addEventListener("click", () => printElement("printableInvoiceSheet", "Purchase Invoice"));
+
   document.querySelectorAll(".sync-now-btn").forEach(button => {
     button.addEventListener("click", () => {
       if (typeof syncNow === "function") {
@@ -2417,6 +2422,9 @@ function bindEvents() {
       editingSaleId = Number(id);
       renderSalesHistory();
     }
+    if (action === "view-receipt") await openSaleReceiptById(Number(id));
+    if (action === "view-purchase") await openPurchaseInvoiceView(Number(id));
+    if (action === "edit-purchase") await openEditPurchaseModal(Number(id));
     if (action === "save-sale") await saveSaleEdits(Number(id));
     if (action === "cancel-sale") {
       editingSaleId = null;
