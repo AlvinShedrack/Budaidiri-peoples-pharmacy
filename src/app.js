@@ -240,8 +240,8 @@ async function seedInitialData() {
   if (!users.length) {
     await addRecord(STORE.users, {
       name: "System Administrator",
-      email: "admin@budadiri.com",
-      passwordHash: simpleHash("admin123"),
+      email: "patienceannamuduwa@gmail.com",
+      passwordHash: simpleHash("Patience@budadiri"),
       role: "Administrator",
       isActive: true,
       createdAt: new Date().toISOString()
@@ -249,8 +249,8 @@ async function seedInitialData() {
 
     await addRecord(STORE.users, {
       name: "Main Dispenser",
-      email: "dispenser@budadiri.com",
-      passwordHash: simpleHash("disp123"),
+      email: "justus@peoplespharmacy.com",
+      passwordHash: simpleHash("Justus@2024"),
       role: "Dispenser",
       isActive: true,
       createdAt: new Date().toISOString()
@@ -258,8 +258,8 @@ async function seedInitialData() {
 
     await addRecord(STORE.users, {
       name: "Director",
-      email: "director@budadiri.com",
-      passwordHash: simpleHash("director123"),
+      email: "nangoliumar6@gmail.com",
+      passwordHash: simpleHash("Honourable"),
       role: "Director",
       isActive: true,
       createdAt: new Date().toISOString()
