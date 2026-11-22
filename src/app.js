@@ -204,6 +204,37 @@ function supplierName(suppliers, id) {
   return supplier ? supplier.name : "Not set";
 }
 
+function getMedicineBatches(med) {
+  if (Array.isArray(med.batches) && med.batches.length) {
+    return med.batches;
+  }
+  const qty = Number(med.quantity || 0);
+  if (qty > 0 || med.batchNo || med.expiryDate || med.buyingPrice) {
+    return [{
+      batchId: `legacy-${med.id}`,
+      batchNo: med.batchNo || "DEFAULT",
+      expiryDate: med.expiryDate || "",
+      quantity: qty,
+      unitCost: Number(med.buyingPrice || 0),
+      createdAt: med.createdAt || new Date().toISOString()
+    }];
+  }
+  return [];
+}
+
+function recalculateMedicineFromBatches(med) {
+  const batches = Array.isArray(med.batches) ? med.batches : [];
+  const totalQty = batches.reduce((sum, b) => sum + Math.max(0, Number(b.quantity || 0)), 0);
+  med.quantity = totalQty;
+
+  const activeBatch = batches.find(b => Number(b.quantity || 0) > 0) || batches.at(-1);
+  if (activeBatch) {
+    med.batchNo = activeBatch.batchNo || "";
+    med.expiryDate = activeBatch.expiryDate || "";
+    med.buyingPrice = Number(activeBatch.unitCost ?? med.buyingPrice ?? 0);
+  }
+}
+
 async function seedInitialData() {
   const users = await getAll(STORE.users);
   if (!users.length) {
@@ -319,7 +350,6 @@ function applyRoleAccess() {
     el.classList.toggle("hidden", !manager);
   });
 
-  // Dispensers can now access both Retail and Wholesale
   const saleType = $("saleType");
   if (saleType) {
     saleType.disabled = false;
@@ -327,12 +357,6 @@ function applyRoleAccess() {
       option.hidden = false;
     });
   }
-
-  const usersNav = document.querySelector('.nav-link[data-page="users"]');
-  if (usersNav) {
-    usersNav.classList.toggle("hidden", !manager);
-  }
-}
 
   const usersNav = document.querySelector('.nav-link[data-page="users"]');
   if (usersNav) {
@@ -414,7 +438,13 @@ async function renderDashboard() {
 
   const todaySalesTotal = todaySales.reduce((sum, sale) => sum + Number(sale.total || 0), 0);
   const todayProfitTotal = todaySales.reduce((sum, sale) => sum + Number(sale.profit || 0), 0);
-  const stockValue = medicines.reduce((sum, med) => sum + (Number(med.quantity || 0) * Number(med.buyingPrice || 0)), 0);
+  const stockValue = medicines.reduce((sum, med) => {
+    const batches = getMedicineBatches(med);
+    if (batches.length) {
+      return sum + batches.reduce((bSum, b) => bSum + (Number(b.quantity || 0) * Number(b.unitCost || 0)), 0);
+    }
+    return sum + (Number(med.quantity || 0) * Number(med.buyingPrice || 0));
+  }, 0);
 
   $("dashTotalMedicines").textContent = medicines.length;
   $("dashLowStock").textContent = lowStock.length;
@@ -512,6 +542,7 @@ async function renderSalesHistory() {
           <td>${formatMoney(changeGiven)}</td>
           <td>${createdAt}</td>
           <td class="actions-cell">
+            <button class="table-btn" data-action="view-receipt" data-id="${sale.id}">Receipt / Reprint</button>
             <button class="table-btn secondary" data-action="edit-sale" data-id="${sale.id}">Edit</button>
             <button class="table-btn danger" data-action="delete-sale" data-id="${sale.id}">Delete</button>
           </td>
@@ -519,6 +550,12 @@ async function renderSalesHistory() {
       `;
     }).join("")
     : `<tr><td colspan="9">No sales recorded yet.</td></tr>`;
+}
+
+async function openSaleReceiptById(saleId) {
+  const sale = await getById(STORE.sales, saleId);
+  if (!sale) return showToast("Sale receipt not found.");
+  showReceipt(sale);
 }
 
 async function saveSaleEdits(saleId) {
@@ -588,19 +625,26 @@ async function renderInventory() {
 
   const canEdit = requireRole(["Administrator", "Director"]);
 
-  $("medicineTable").innerHTML = filtered.length ? filtered.map(med => `
-    <tr>
-      <td><strong>${escapeHtml(med.name)}</strong><br><span class="muted">${escapeHtml(med.genericName || "")}</span></td>
-      <td>${escapeHtml(med.category || "")}</td>
-      <td>${formatMoney(med.buyingPrice)}</td>
-      <td>${formatMoney(med.sellingPrice)}</td>
-      <td>${formatMoney(med.wholesalePrice)}</td>
-      <td>
-        ${canEdit ? `<button class="table-btn" data-action="edit-medicine" data-id="${med.id}">Edit</button>` : ""}
-        ${canEdit ? `<button class="table-btn danger" data-action="delete-medicine" data-id="${med.id}">Delete</button>` : ""}
-      </td>
-    </tr>
-  `).join("") : `<tr><td colspan="6">No medicines found.</td></tr>`;
+  $("medicineTable").innerHTML = filtered.length ? filtered.map(med => {
+    const activeBatches = getMedicineBatches(med).filter(b => Number(b.quantity || 0) > 0);
+    const batchHint = activeBatches.length
+      ? `<br><span class="muted">${activeBatches.length} batch(es) | Total Qty: ${Number(med.quantity || 0)}</span>`
+      : `<br><span class="muted">Qty: ${Number(med.quantity || 0)}</span>`;
+
+    return `
+      <tr>
+        <td><strong>${escapeHtml(med.name)}</strong><br><span class="muted">${escapeHtml(med.genericName || "")}</span>${batchHint}</td>
+        <td>${escapeHtml(med.category || "")}</td>
+        <td>${formatMoney(med.buyingPrice)}</td>
+        <td>${formatMoney(med.sellingPrice)}</td>
+        <td>${formatMoney(med.wholesalePrice)}</td>
+        <td>
+          ${canEdit ? `<button class="table-btn" data-action="edit-medicine" data-id="${med.id}">Edit</button>` : ""}
+          ${canEdit ? `<button class="table-btn danger" data-action="delete-medicine" data-id="${med.id}">Delete</button>` : ""}
+        </td>
+      </tr>
+    `;
+  }).join("") : `<tr><td colspan="6">No medicines found.</td></tr>`;
 }
 
 async function populateSupplierOptions() {
@@ -642,6 +686,44 @@ async function syncSalePriceInputFromSelection() {
   priceInput.value = price;
 }
 
+async function populateBatchOptionsForMedicine() {
+  const medSelect = $("saleMedicineSelect");
+  const batchSelect = $("saleBatchSelect");
+  if (!medSelect || !batchSelect) return;
+
+  const medId = Number(medSelect.value);
+  if (!medId) {
+    batchSelect.innerHTML = `<option value="">No batch</option>`;
+    return;
+  }
+
+  const med = await getById(STORE.medicines, medId);
+  if (!med) {
+    batchSelect.innerHTML = `<option value="">No batch</option>`;
+    return;
+  }
+
+  const batches = getMedicineBatches(med).filter(b => {
+    const notExpired = !b.expiryDate || daysUntil(b.expiryDate) >= 0;
+    return Number(b.quantity || 0) > 0 && notExpired;
+  });
+
+  if (!batches.length) {
+    batchSelect.innerHTML = `<option value="">Auto / General Stock (${Number(med.quantity || 0)})</option>`;
+    return;
+  }
+
+  batchSelect.innerHTML = batches.map((b, idx) => {
+    const label = [
+      b.batchNo || `Batch #${idx + 1}`,
+      `Qty: ${Number(b.quantity || 0)}`,
+      b.expiryDate ? `Exp: ${formatDateDisplay(b.expiryDate)}` : "",
+      `Cost: ${formatMoney(b.unitCost || 0)}`
+    ].filter(Boolean).join(" | ");
+    return `<option value="${escapeHtml(String(b.batchId ?? idx))}">${escapeHtml(label)}</option>`;
+  }).join("");
+}
+
 async function populateMedicineOptions() {
   const medicines = await getAll(STORE.medicines);
   const saleList = medicines
@@ -660,6 +742,7 @@ async function populateMedicineOptions() {
   $("saleMedicineSelect").innerHTML = saleOptions || `<option value="">No sellable medicine available</option>`;
   $("purchaseMedicineSelect").innerHTML = purchaseOptions || `<option value="">Add medicine first</option>`;
 
+  await populateBatchOptionsForMedicine();
   await syncSalePriceInputFromSelection();
 }
 
@@ -861,6 +944,7 @@ async function deleteSupplier(id) {
 
 async function addToCart() {
   const medicineId = Number($("saleMedicineSelect").value);
+  const selectedBatchId = $("saleBatchSelect")?.value || "";
   const qty = Number($("saleQty").value || 0);
   const discount = Number($("saleDiscount").value || 0);
   const rawPriceInput = $("salePrice")?.value;
@@ -871,21 +955,36 @@ async function addToCart() {
   if (!med) return showToast("Medicine not found.");
   if (med.expiryDate && daysUntil(med.expiryDate) < 0) return showToast("Cannot sell expired medicine.");
 
-  const existingQty = cart.filter(item => item.medicineId === medicineId).reduce((sum, item) => sum + item.qty, 0);
-  if (existingQty + qty > Number(med.quantity || 0)) return showToast("Insufficient stock.");
+  const batches = getMedicineBatches(med);
+  const chosenBatch = batches.find((b, idx) => String(b.batchId ?? idx) === selectedBatchId);
+
+  if (chosenBatch && chosenBatch.expiryDate && daysUntil(chosenBatch.expiryDate) < 0) {
+    return showToast("Cannot sell from an expired batch.");
+  }
+
+  const availableQty = chosenBatch ? Number(chosenBatch.quantity || 0) : Number(med.quantity || 0);
+  const existingQtyInCart = cart
+    .filter(item => item.medicineId === medicineId && String(item.batchId || "") === String(chosenBatch?.batchId || ""))
+    .reduce((sum, item) => sum + Number(item.qty || 0), 0);
+
+  if (existingQtyInCart + qty > availableQty) {
+    return showToast(`Insufficient stock in selected batch (${availableQty} available).`);
+  }
 
   const saleType = $("saleType")?.value || "retail";
   const defaultPrice = await getDefaultSalePriceForMedicine(med, saleType);
   const parsedPrice = rawPriceInput !== undefined && rawPriceInput !== "" ? Number(rawPriceInput) : defaultPrice;
   const effectivePrice = Number.isNaN(parsedPrice) || parsedPrice < 0 ? defaultPrice : parsedPrice;
+  const costBasis = chosenBatch ? Number(chosenBatch.unitCost ?? med.buyingPrice ?? 0) : Number(med.buyingPrice || 0);
 
   cart.push({
     medicineId,
     name: med.name,
-    batchNo: med.batchNo || "",
+    batchId: chosenBatch ? String(chosenBatch.batchId || "") : "",
+    batchNo: chosenBatch ? (chosenBatch.batchNo || "") : (med.batchNo || ""),
     qty,
     sellingPrice: effectivePrice,
-    buyingPrice: Number(med.buyingPrice || 0),
+    buyingPrice: costBasis,
     discount: Math.max(0, discount),
     saleType
   });
@@ -943,7 +1042,18 @@ async function completeSale() {
   const medicines = await getAll(STORE.medicines);
   for (const item of cart) {
     const med = medicines.find(m => Number(m.id) === Number(item.medicineId));
-    if (!med || Number(med.quantity || 0) < Number(item.qty)) {
+    if (!med) return showToast(`Medicine not found for ${item.name}.`);
+
+    const batches = getMedicineBatches(med);
+    if (item.batchId) {
+      const batch = batches.find(b => String(b.batchId) === String(item.batchId));
+      const neededForBatch = cart
+        .filter(c => Number(c.medicineId) === Number(med.id) && String(c.batchId) === String(item.batchId))
+        .reduce((s, c) => s + Number(c.qty || 0), 0);
+      if (!batch || Number(batch.quantity || 0) < neededForBatch) {
+        return showToast(`Insufficient stock in batch ${item.batchNo || ""} for ${item.name}.`);
+      }
+    } else if (Number(med.quantity || 0) < Number(item.qty)) {
       return showToast(`Insufficient stock for ${item.name}.`);
     }
   }
@@ -966,10 +1076,41 @@ async function completeSale() {
     return sum + (itemRevenue - itemCost);
   }, 0);
 
+  const medMap = new Map();
   for (const item of cart) {
-    const med = await getById(STORE.medicines, item.medicineId);
-    med.quantity = Number(med.quantity || 0) - Number(item.qty);
+    let med = medMap.get(item.medicineId) || await getById(STORE.medicines, item.medicineId);
+    let batches = [...getMedicineBatches(med).map(b => ({ ...b }))];
+    let remainingToDeduct = Number(item.qty || 0);
+
+    if (item.batchId) {
+      const target = batches.find(b => String(b.batchId) === String(item.batchId));
+      if (target) {
+        const take = Math.min(Number(target.quantity || 0), remainingToDeduct);
+        target.quantity = Number(target.quantity || 0) - take;
+        remainingToDeduct -= take;
+      }
+    }
+
+    if (remainingToDeduct > 0) {
+      for (const b of batches) {
+        if (remainingToDeduct <= 0) break;
+        const take = Math.min(Number(b.quantity || 0), remainingToDeduct);
+        b.quantity = Number(b.quantity || 0) - take;
+        remainingToDeduct -= take;
+      }
+    }
+
+    med.batches = batches;
+    if (batches.length) {
+      recalculateMedicineFromBatches(med);
+    } else {
+      med.quantity = Math.max(0, Number(med.quantity || 0) - Number(item.qty || 0));
+    }
     med.updatedAt = new Date().toISOString();
+    medMap.set(item.medicineId, med);
+  }
+
+  for (const med of medMap.values()) {
     await putRecord(STORE.medicines, med);
   }
 
@@ -1079,7 +1220,7 @@ function showReceipt(sale) {
           ${sale.lines.map((item, index) => `
             <tr>
               <td>${index + 1}</td>
-              <td>${escapeHtml(item.name)}</td>
+              <td>${escapeHtml(item.name)}${item.batchNo ? `<br><span class="muted">Batch: ${escapeHtml(item.batchNo)}</span>` : ""}</td>
               <td>${item.qty}</td>
               <td>${formatMoney(item.sellingPrice)}</td>
               <td>${formatMoney((item.qty * item.sellingPrice) - item.discount)}</td>
@@ -1184,16 +1325,40 @@ async function completePurchase() {
   for (const line of purchaseLines) {
     const med = await getById(STORE.medicines, line.medicineId);
     if (!med) continue;
-    med.quantity = Number(med.quantity || 0) + Number(line.qty);
-    if (line.unitCost >= 0) {
-      med.buyingPrice = Number(line.unitCost);
+
+    const batches = Array.isArray(med.batches) ? [...med.batches] : getMedicineBatches(med);
+    const normalizedBatchNo = (line.batchNo || "").trim();
+    const normalizedExpiry = line.expiryDate || "";
+    const unitCost = Number(line.unitCost || 0);
+    const qty = Number(line.qty || 0);
+
+    const matchingBatch = normalizedBatchNo
+      ? batches.find(b =>
+        String(b.batchNo || "").trim().toLowerCase() === normalizedBatchNo.toLowerCase() &&
+        String(b.expiryDate || "") === normalizedExpiry &&
+        Number(b.unitCost || 0) === unitCost
+      )
+      : null;
+
+    if (matchingBatch) {
+      matchingBatch.quantity = Number(matchingBatch.quantity || 0) + qty;
+      matchingBatch.updatedAt = new Date().toISOString();
+    } else {
+      batches.push({
+        batchId: `B-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
+        batchNo: normalizedBatchNo || `BATCH-${batches.length + 1}`,
+        expiryDate: normalizedExpiry,
+        quantity: qty,
+        unitCost,
+        invoiceNo,
+        supplierId,
+        purchaseDate,
+        createdAt: new Date().toISOString()
+      });
     }
-    if (line.batchNo) {
-      med.batchNo = line.batchNo;
-    }
-    if (line.expiryDate) {
-      med.expiryDate = line.expiryDate;
-    }
+
+    med.batches = batches;
+    recalculateMedicineFromBatches(med);
     med.updatedAt = new Date().toISOString();
     await putRecord(STORE.medicines, med);
   }
@@ -1215,7 +1380,7 @@ async function completePurchase() {
   $("purchaseInvoice").value = "";
   $("purchaseDate").value = "";
   renderPurchaseLines();
-  showToast("Purchase saved and stock updated.");
+  showToast("Purchase saved as batch stock.");
   await refreshAll();
   if (typeof queueAutoSync === "function") {
     queueAutoSync();
@@ -1235,7 +1400,11 @@ async function renderPurchasesHistory() {
   table.innerHTML = sorted.length ? sorted.map(purchase => {
     const itemsSummary = Array.isArray(purchase.lines) && purchase.lines.length
       ? purchase.lines.map(l => {
-        const meta = [l.batchNo ? `Batch ${l.batchNo}` : "", l.expiryDate ? `Exp ${l.expiryDate}` : ""].filter(Boolean).join(", ");
+        const meta = [
+          l.batchNo ? `Batch ${l.batchNo}` : "",
+          l.expiryDate ? `Exp ${l.expiryDate}` : "",
+          l.unitCost !== undefined ? `@ ${formatMoney(l.unitCost)}` : ""
+        ].filter(Boolean).join(", ");
         return `${escapeHtml(l.name)} (${l.qty})${meta ? ` <span class="muted">[${escapeHtml(meta)}]</span>` : ""}`;
       }).join("<br>")
       : `<span class="muted">No lines</span>`;
@@ -1248,12 +1417,189 @@ async function renderPurchasesHistory() {
         <td>${itemsSummary}</td>
         <td>${formatMoney(purchase.total)}</td>
         <td>${escapeHtml(purchase.createdByName || "")}</td>
-        <td>
+        <td class="actions-cell">
+          <button class="table-btn" data-action="view-purchase" data-id="${purchase.id}">View</button>
+          ${canEdit ? `<button class="table-btn secondary" data-action="edit-purchase" data-id="${purchase.id}">Edit</button>` : ""}
           ${canEdit ? `<button class="table-btn danger" data-action="delete-purchase" data-id="${purchase.id}">Delete</button>` : ""}
         </td>
       </tr>
     `;
   }).join("") : `<tr><td colspan="7">No purchases recorded yet.</td></tr>`;
+}
+
+async function openPurchaseInvoiceView(id) {
+  const purchase = await getById(STORE.purchases, id);
+  if (!purchase) return showToast("Invoice not found.");
+  const suppliers = await getAll(STORE.suppliers);
+
+  $("invoiceViewModalTitle").textContent = `Invoice: ${purchase.invoiceNo || id}`;
+  $("invoiceViewContent").innerHTML = `
+    <div id="printableInvoiceSheet" class="panel" style="box-shadow:none;margin:0;">
+      <p><strong>Supplier:</strong> ${escapeHtml(supplierName(suppliers, purchase.supplierId))}</p>
+      <p><strong>Invoice No:</strong> ${escapeHtml(purchase.invoiceNo || "")}</p>
+      <p><strong>Purchase Date:</strong> ${escapeHtml(formatDateDisplay(purchase.purchaseDate || purchase.createdAt))}</p>
+      <p><strong>Recorded By:</strong> ${escapeHtml(purchase.createdByName || "")}</p>
+      <div class="table-wrap" style="margin-top:12px;">
+        <table>
+          <thead>
+            <tr>
+              <th>Medicine</th>
+              <th>Batch</th>
+              <th>Expiry</th>
+              <th>Qty</th>
+              <th>Unit Cost</th>
+              <th>Total</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${(purchase.lines || []).map(line => `
+              <tr>
+                <td>${escapeHtml(line.name)}</td>
+                <td>${escapeHtml(line.batchNo || "")}</td>
+                <td>${escapeHtml(line.expiryDate || "")}</td>
+                <td>${Number(line.qty || 0)}</td>
+                <td>${formatMoney(line.unitCost)}</td>
+                <td>${formatMoney(Number(line.qty || 0) * Number(line.unitCost || 0))}</td>
+              </tr>
+            `).join("")}
+          </tbody>
+        </table>
+      </div>
+      <div class="checkout-line total">
+        <span>Invoice Total</span>
+        <strong>${formatMoney(purchase.total)}</strong>
+      </div>
+    </div>
+  `;
+  openModal("invoiceViewModal");
+}
+
+function recalcEditPurchaseTotal() {
+  const rows = document.querySelectorAll("#editPurchaseLinesTable tr");
+  let sum = 0;
+  rows.forEach(row => {
+    const qty = Number(row.querySelector('[name="lineQty"]')?.value || 0);
+    const cost = Number(row.querySelector('[name="lineCost"]')?.value || 0);
+    const lineTotal = Math.max(0, qty) * Math.max(0, cost);
+    sum += lineTotal;
+    const cell = row.querySelector(".edit-line-total");
+    if (cell) cell.textContent = formatMoney(lineTotal);
+  });
+  if ($("editPurchaseTotal")) $("editPurchaseTotal").textContent = formatMoney(sum);
+}
+
+async function openEditPurchaseModal(id) {
+  if (!requireRole(["Administrator", "Director"])) return showToast("Not allowed.");
+  const purchase = await getById(STORE.purchases, id);
+  if (!purchase) return showToast("Purchase invoice not found.");
+
+  const suppliers = await getAll(STORE.suppliers);
+  $("editPurchaseSupplier").innerHTML =
+    `<option value="">Not set</option>` +
+    suppliers.map(s => `<option value="${s.id}" ${Number(s.id) === Number(purchase.supplierId) ? "selected" : ""}>${escapeHtml(s.name)}</option>`).join("");
+
+  $("editPurchaseId").value = purchase.id;
+  $("editPurchaseInvoiceNo").value = purchase.invoiceNo || "";
+  $("editPurchaseDate").value = formatDateDisplay(purchase.purchaseDate || purchase.createdAt);
+
+  const lines = Array.isArray(purchase.lines) ? purchase.lines : [];
+  $("editPurchaseLinesTable").innerHTML = lines.map((line, idx) => {
+    const qty = Number(line.qty || 0);
+    const cost = Number(line.unitCost || 0);
+    return `
+      <tr data-line-index="${idx}">
+        <td><strong>${escapeHtml(line.name)}</strong></td>
+        <td><input class="table-input" name="lineBatch" value="${escapeHtml(line.batchNo || "")}" /></td>
+        <td><input class="table-input" name="lineExpiry" value="${escapeHtml(line.expiryDate || "")}" placeholder="DD-MM-YYYY" /></td>
+        <td><input class="table-input" type="number" min="0" name="lineQty" value="${qty}" /></td>
+        <td><input class="table-input" type="number" min="0" step="any" name="lineCost" value="${cost}" /></td>
+        <td class="edit-line-total">${formatMoney(qty * cost)}</td>
+      </tr>
+    `;
+  }).join("");
+
+  recalcEditPurchaseTotal();
+  openModal("editPurchaseModal");
+}
+
+async function saveEditedPurchase(event) {
+  event.preventDefault();
+  if (!requireRole(["Administrator", "Director"])) return showToast("Not allowed.");
+
+  const id = Number($("editPurchaseId").value);
+  const purchase = await getById(STORE.purchases, id);
+  if (!purchase) return showToast("Invoice not found.");
+
+  const oldLines = Array.isArray(purchase.lines) ? purchase.lines : [];
+  const rows = Array.from(document.querySelectorAll("#editPurchaseLinesTable tr"));
+
+  const updatedLines = rows.map((row, idx) => {
+    const orig = oldLines[idx] || {};
+    return {
+      ...orig,
+      batchNo: row.querySelector('[name="lineBatch"]').value.trim(),
+      expiryDate: normalizeDateInput(row.querySelector('[name="lineExpiry"]').value.trim()),
+      qty: Math.max(0, Number(row.querySelector('[name="lineQty"]').value || 0)),
+      unitCost: Math.max(0, Number(row.querySelector('[name="lineCost"]').value || 0))
+    };
+  });
+
+  for (let i = 0; i < Math.max(oldLines.length, updatedLines.length); i++) {
+    const oldL = oldLines[i];
+    const newL = updatedLines[i];
+    const medId = newL?.medicineId || oldL?.medicineId;
+    if (!medId) continue;
+
+    const med = await getById(STORE.medicines, medId);
+    if (!med) continue;
+
+    const batches = Array.isArray(med.batches) ? [...med.batches] : getMedicineBatches(med);
+    const oldQty = Number(oldL?.qty || 0);
+    const newQty = Number(newL?.qty || 0);
+    const delta = newQty - oldQty;
+
+    const targetBatch = batches.find(b =>
+      (oldL?.batchNo && String(b.batchNo || "") === String(oldL.batchNo) && Number(b.unitCost || 0) === Number(oldL.unitCost || 0)) ||
+      (newL?.batchNo && String(b.batchNo || "") === String(newL.batchNo))
+    );
+
+    if (targetBatch) {
+      targetBatch.quantity = Math.max(0, Number(targetBatch.quantity || 0) + delta);
+      if (newL?.batchNo) targetBatch.batchNo = newL.batchNo;
+      if (newL?.expiryDate) targetBatch.expiryDate = newL.expiryDate;
+      if (newL !== undefined) targetBatch.unitCost = Number(newL.unitCost || 0);
+    } else if (newQty > 0) {
+      batches.push({
+        batchId: `B-${Date.now()}-${i}`,
+        batchNo: newL.batchNo || `BATCH-${batches.length + 1}`,
+        expiryDate: newL.expiryDate || "",
+        quantity: newQty,
+        unitCost: Number(newL.unitCost || 0),
+        invoiceNo: $("editPurchaseInvoiceNo").value.trim(),
+        createdAt: new Date().toISOString()
+      });
+    }
+
+    med.batches = batches;
+    recalculateMedicineFromBatches(med);
+    med.updatedAt = new Date().toISOString();
+    await putRecord(STORE.medicines, med);
+  }
+
+  purchase.supplierId = Number($("editPurchaseSupplier").value) || null;
+  purchase.invoiceNo = $("editPurchaseInvoiceNo").value.trim() || purchase.invoiceNo;
+  purchase.purchaseDate = normalizeDateInput($("editPurchaseDate").value) || purchase.purchaseDate;
+  purchase.lines = updatedLines;
+  purchase.total = updatedLines.reduce((sum, l) => sum + (Number(l.qty || 0) * Number(l.unitCost || 0)), 0);
+  purchase.updatedAt = new Date().toISOString();
+
+  await putRecord(STORE.purchases, purchase);
+  await writeAudit("purchase_updated", { id, invoiceNo: purchase.invoiceNo, total: purchase.total });
+
+  closeModal("editPurchaseModal");
+  showToast("Purchase invoice updated.");
+  await refreshAll();
+  if (typeof queueAutoSync === "function") queueAutoSync();
 }
 
 async function deletePurchaseRecord(id) {
@@ -1669,7 +2015,13 @@ async function buildDashboardReport() {
 
   const todaySalesTotal = todaySales.reduce((sum, sale) => sum + Number(sale.total || 0), 0);
   const todayProfitTotal = todaySales.reduce((sum, sale) => sum + Number(sale.profit || 0), 0);
-  const stockValue = medicines.reduce((sum, med) => sum + (Number(med.quantity || 0) * Number(med.buyingPrice || 0)), 0);
+  const stockValue = medicines.reduce((sum, med) => {
+    const batches = getMedicineBatches(med);
+    if (batches.length) {
+      return sum + batches.reduce((bSum, b) => bSum + (Number(b.quantity || 0) * Number(b.unitCost || 0)), 0);
+    }
+    return sum + (Number(med.quantity || 0) * Number(med.buyingPrice || 0));
+  }, 0);
 
   const recentSales = [...sales].sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt)).slice(0, 15);
   const alerts = [
@@ -1793,12 +2145,13 @@ async function buildSalesReport() {
     <section class="section">
       <h3>Current Sale Items</h3>
       ${makeTable(
-        ["Medicine", "Qty", "Unit Price", "Discount", "Line Total"],
+        ["Medicine", "Batch", "Qty", "Unit Price", "Discount", "Line Total"],
         cart.map(item => {
           const lineTotal = Math.max(0, (Number(item.qty) * Number(item.sellingPrice)) - Number(item.discount || 0));
           return `
             <tr>
               <td>${escapeHtml(item.name)}</td>
+              <td>${escapeHtml(item.batchNo || "")}</td>
               <td class="text-right">${Number(item.qty || 0)}</td>
               <td class="text-right">${formatMoney(item.sellingPrice)}</td>
               <td class="text-right">${formatMoney(item.discount)}</td>
@@ -2334,7 +2687,10 @@ function bindEvents() {
   $("addSupplierBtn").addEventListener("click", () => openSupplierForm());
   $("supplierForm").addEventListener("submit", saveSupplier);
 
-  $("saleMedicineSelect")?.addEventListener("change", syncSalePriceInputFromSelection);
+  $("saleMedicineSelect")?.addEventListener("change", async () => {
+    await populateBatchOptionsForMedicine();
+    await syncSalePriceInputFromSelection();
+  });
   $("saleType")?.addEventListener("change", syncSalePriceInputFromSelection);
 
   $("cartTable")?.addEventListener("change", event => {
@@ -2361,6 +2717,9 @@ function bindEvents() {
   $("completePurchaseBtn").addEventListener("click", completePurchase);
   $("clearPurchaseBtn").addEventListener("click", () => { purchaseLines = []; renderPurchaseLines(); });
   $("refreshPurchasesHistoryBtn")?.addEventListener("click", renderPurchasesHistory);
+  $("editPurchaseForm")?.addEventListener("submit", saveEditedPurchase);
+  $("editPurchaseLinesTable")?.addEventListener("input", recalcEditPurchaseTotal);
+  $("printInvoiceModalBtn")?.addEventListener("click", () => printElement("printableInvoiceSheet", "Purchase Invoice"));
 
   $("refreshReportsBtn").addEventListener("click", renderReports);
   $("reportDate").addEventListener("change", renderReports);
@@ -2383,11 +2742,6 @@ function bindEvents() {
 
   $("exportBackupBtn").addEventListener("click", exportBackup);
   $("importBackupInput").addEventListener("change", event => importBackup(event.target.files[0]));
-
-  $("saleMedicineSelect")?.addEventListener("change", populateBatchOptionsForMedicine);
-  $("editPurchaseForm")?.addEventListener("submit", saveEditedPurchase);
-  $("editPurchaseLinesTable")?.addEventListener("input", recalcEditPurchaseTotal);
-  $("printInvoiceModalBtn")?.addEventListener("click", () => printElement("printableInvoiceSheet", "Purchase Invoice"));
 
   document.querySelectorAll(".sync-now-btn").forEach(button => {
     button.addEventListener("click", () => {
@@ -2418,13 +2772,11 @@ function bindEvents() {
     if (action === "delete-medicine") deleteMedicine(id);
     if (action === "edit-supplier") openSupplierForm(id);
     if (action === "delete-supplier") deleteSupplier(id);
+    if (action === "view-receipt") await openSaleReceiptById(Number(id));
     if (action === "edit-sale") {
       editingSaleId = Number(id);
       renderSalesHistory();
     }
-    if (action === "view-receipt") await openSaleReceiptById(Number(id));
-    if (action === "view-purchase") await openPurchaseInvoiceView(Number(id));
-    if (action === "edit-purchase") await openEditPurchaseModal(Number(id));
     if (action === "save-sale") await saveSaleEdits(Number(id));
     if (action === "cancel-sale") {
       editingSaleId = null;
@@ -2433,6 +2785,8 @@ function bindEvents() {
     if (action === "delete-sale") await deleteSaleRecord(Number(id));
     if (action === "remove-cart") { cart.splice(index, 1); renderCart(); }
     if (action === "remove-purchase-line") { purchaseLines.splice(index, 1); renderPurchaseLines(); }
+    if (action === "view-purchase") await openPurchaseInvoiceView(Number(id));
+    if (action === "edit-purchase") await openEditPurchaseModal(Number(id));
     if (action === "delete-purchase") await deletePurchaseRecord(Number(id));
     if (action === "delete-expense") deletePurchaseExpense(id);
     if (action === "edit-user") openUserForm(id);
@@ -2462,6 +2816,7 @@ async function init() {
   attachDateMask("reportDate");
   attachDateMask("purchaseDate");
   attachDateMask("expenseDate");
+  attachDateMask("editPurchaseDate");
 
   if ($("reportDate")) {
     $("reportDate").value = todayISO();
