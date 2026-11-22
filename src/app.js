@@ -319,23 +319,20 @@ function applyRoleAccess() {
     el.classList.toggle("hidden", !manager);
   });
 
+  // Dispensers can now access both Retail and Wholesale
   const saleType = $("saleType");
   if (saleType) {
-    if (isDispenser()) {
-      saleType.value = "retail";
-      saleType.disabled = true;
-
-      Array.from(saleType.options).forEach(option => {
-        option.hidden = option.value !== "retail";
-      });
-    } else {
-      saleType.disabled = false;
-
-      Array.from(saleType.options).forEach(option => {
-        option.hidden = false;
-      });
-    }
+    saleType.disabled = false;
+    Array.from(saleType.options).forEach(option => {
+      option.hidden = false;
+    });
   }
+
+  const usersNav = document.querySelector('.nav-link[data-page="users"]');
+  if (usersNav) {
+    usersNav.classList.toggle("hidden", !manager);
+  }
+}
 
   const usersNav = document.querySelector('.nav-link[data-page="users"]');
   if (usersNav) {
