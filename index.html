@@ -239,6 +239,7 @@
             </div>
             <div class="sale-add-row">
               <select id="saleMedicineSelect"></select>
+              <select id="saleBatchSelect" title="Select batch"></select>
               <input id="saleQty" type="number" min="1" placeholder="Quantity" />
               <input id="salePrice" type="number" min="0" step="any" placeholder="Unit price" />
               <input id="saleDiscount" type="number" min="0" placeholder="Discount" />
@@ -711,6 +712,72 @@
         <button type="button" class="ghost-btn" data-close="receiptModal">Close</button>
         <button type="button" id="printReceiptBtn" class="primary-btn">Print / Export PDF</button>
       </div>
+    </div>
+  </div>
+  
+  <div id="invoiceViewModal" class="modal hidden" role="dialog" aria-modal="true" aria-hidden="true" aria-labelledby="invoiceViewModalTitle">
+    <div class="modal-card large">
+      <div class="modal-header">
+        <h2 id="invoiceViewModalTitle">Purchase Invoice Details</h2>
+        <button type="button" class="modal-close" data-close="invoiceViewModal">×</button>
+      </div>
+      <div id="invoiceViewContent"></div>
+      <div class="form-actions">
+        <button type="button" class="ghost-btn" data-close="invoiceViewModal">Close</button>
+        <button type="button" id="printInvoiceModalBtn" class="primary-btn">Print Invoice</button>
+      </div>
+    </div>
+  </div>
+  
+  <div id="editPurchaseModal" class="modal hidden" role="dialog" aria-modal="true" aria-hidden="true" aria-labelledby="editPurchaseModalTitle">
+    <div class="modal-card large">
+      <div class="modal-header">
+        <h2 id="editPurchaseModalTitle">Edit Purchase Invoice</h2>
+        <button type="button" class="modal-close" data-close="editPurchaseModal">×</button>
+      </div>
+      <form id="editPurchaseForm" class="form-grid">
+        <input type="hidden" id="editPurchaseId" />
+        <div class="form-grid three">
+          <div>
+            <label>Supplier</label>
+            <select id="editPurchaseSupplier"></select>
+          </div>
+          <div>
+            <label>Invoice Number</label>
+            <input id="editPurchaseInvoiceNo" required />
+          </div>
+          <div>
+            <label>Purchase Date</label>
+            <input id="editPurchaseDate" type="text" placeholder="DD-MM-YYYY" />
+          </div>
+        </div>
+  
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>Medicine</th>
+                <th>Batch No</th>
+                <th>Expiry</th>
+                <th>Qty</th>
+                <th>Unit Cost</th>
+                <th>Line Total</th>
+              </tr>
+            </thead>
+            <tbody id="editPurchaseLinesTable"></tbody>
+          </table>
+        </div>
+  
+        <div class="checkout-line total">
+          <span>Updated Invoice Total</span>
+          <strong id="editPurchaseTotal">USh 0</strong>
+        </div>
+  
+        <div class="form-actions">
+          <button type="button" class="ghost-btn" data-close="editPurchaseModal">Cancel</button>
+          <button type="submit" class="primary-btn">Save Invoice Changes</button>
+        </div>
+      </form>
     </div>
   </div>
   <footer class="app-footer">Developed by Alvin Shedrack © 2026</footer>
