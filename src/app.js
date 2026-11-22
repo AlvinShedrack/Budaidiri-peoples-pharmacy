@@ -18,7 +18,7 @@ let deferredInstallPrompt = null;
 
 const BRAND = {
   name: "Budadiri People's Pharmacy",
-  tagline: "caring passionately for your health and drug needs",
+  tagline: "Caring passionately for your health and drug needs",
   receiptTagline: "Thank you for choosing Budadiri People's Pharmacy.",
   logo: "./assets/budadiri-logo.png",
   address: "Located at: Wagagai Hotel, Budadiri Town Council",
