@@ -68,10 +68,18 @@ function getAll(storeName) {
   });
 }
 
+// IndexedDB autoIncrement keys are numbers.
+// Convert numeric-looking IDs (including IDs coming from HTML select values,
+// which are always strings) back to numbers before looking them up.
 function normalizeDbKey(id) {
+  if (id === undefined || id === null || id === "") {
+    return id;
+  }
+
   const value = String(id);
 
-  if (/^\\d+$/.test(value)) {
+  // IMPORTANT: use \d, not \\d.
+  if (/^\d+$/.test(value)) {
     return Number(value);
   }
 
@@ -84,7 +92,8 @@ function generateLocalId() {
 
 function getById(storeName, id) {
   return new Promise((resolve, reject) => {
-    const request = getStore(storeName).get(normalizeDbKey(id));
+    const key = normalizeDbKey(id);
+    const request = getStore(storeName).get(key);
 
     request.onsuccess = () => resolve(request.result || null);
     request.onerror = () => reject(request.error);
@@ -127,8 +136,6 @@ function putRecord(storeName, record) {
     request.onerror = () => reject(request.error);
   });
 }
-
-
 
 function clearStore(storeName) {
   return new Promise((resolve, reject) => {
