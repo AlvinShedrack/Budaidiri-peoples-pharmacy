@@ -71,7 +71,7 @@ function getAll(storeName) {
 function normalizeDbKey(id) {
   const value = String(id);
 
-  if (/^\d+$/.test(value)) {
+  if (/^\\d+$/.test(value)) {
     return Number(value);
   }
 
@@ -138,3 +138,10 @@ function clearStore(storeName) {
     request.onerror = () => reject(request.error);
   });
 }
+
+// Load the inventory stock editor after the page scripts are available.
+document.addEventListener("DOMContentLoaded", () => {
+  const stockEditor = document.createElement("script");
+  stockEditor.src = "./src/inventory-stock.js";
+  document.head.appendChild(stockEditor);
+}, { once: true });
