@@ -986,6 +986,11 @@ async function populateMedicineOptions() {
 }
 
 async function openMedicineForm(id = null) {
+  if (id && !requireRole(["Administrator", "Director"])) {
+    showToast("Only Admin or Director can edit medicines.");
+    return;
+  }
+
   await populateSupplierOptions();
   $("medicineForm").reset();
   $("medicineId").value = "";
@@ -1014,12 +1019,16 @@ async function openMedicineForm(id = null) {
 async function saveMedicine(event) {
   event.preventDefault();
 
-  if (!requireRole(["Administrator", "Director"])) {
-    showToast("Only Admin or Director can save medicines.");
+  const id = $("medicineId").value ? Number($("medicineId").value) : null;
+  const canSave = id
+    ? requireRole(["Administrator", "Director"])
+    : requireRole(["Administrator", "Director", "Dispenser"]);
+
+  if (!canSave) {
+    showToast(id ? "Only Admin or Director can edit medicines." : "Not allowed to add medicines.");
     return;
   }
 
-  const id = $("medicineId").value ? Number($("medicineId").value) : null;
   const existing = id ? await getById(STORE.medicines, id) : null;
   const record = {
     ...(existing || {}),
@@ -1046,7 +1055,7 @@ async function saveMedicine(event) {
   } else {
     record.createdAt = new Date().toISOString();
     await addRecord(STORE.medicines, record);
-    await writeAudit("medicine_created", { name: record.name });
+    await writeAudit("medicine_created", { name: record.name, addedBy: currentUser?.role });
   }
 
   closeModal("medicineModal");
