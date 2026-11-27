@@ -15,6 +15,10 @@
 .stock-adjustment-help{margin-top:8px;font-size:.9rem}
 .stock-plus,.stock-minus{font-weight:800;min-width:34px}
 </style>
+
+<style>
+.stock-available-cell{font-weight:700;white-space:nowrap}
+</style>
 </head>
 <body>
   <div id="toast" class="toast"></div>
@@ -203,7 +207,7 @@
             <table>
               <thead>
                 <tr>
-                  <th>Medicine</th><th>Category</th><th>Buy</th><th>Sell</th><th>Wholesale</th><th>Actions (+ / −)</th>
+                  <th>Medicine</th><th>Category</th><th>Stock Available</th><th>Buy</th><th>Sell</th><th>Wholesale</th><th>Actions (+ / −)</th>
                 </tr>
               </thead>
               <tbody id="medicineTable"></tbody>
