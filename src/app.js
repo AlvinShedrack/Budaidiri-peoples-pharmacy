@@ -210,7 +210,7 @@ function getMedicineBatches(med) {
     return med.batches;
   }
   const qty = Number(med.quantity || 0);
-  if (qty !== 0 || med.batchNo || med.expiryDate || med.buyingPrice || med.quantity !== undefined) {
+  if (qty > 0 || med.batchNo || med.expiryDate || med.buyingPrice) {
     return [{
       batchId: `legacy-${med.id}`,
       batchNo: med.batchNo || "DEFAULT",
@@ -225,14 +225,10 @@ function getMedicineBatches(med) {
 
 function recalculateMedicineFromBatches(med) {
   const batches = Array.isArray(med.batches) ? med.batches : [];
-  // IMPORTANT: inventory stock is allowed to be positive, zero, or negative.
-  // Never clamp quantities to zero here.
-  const totalQty = batches.reduce((sum, b) => sum + Number(b.quantity || 0), 0);
+  const totalQty = batches.reduce((sum, b) => sum + Math.max(0, Number(b.quantity || 0)), 0);
   med.quantity = totalQty;
 
-  const activeBatch =
-    batches.find(b => Number(b.quantity || 0) !== 0) ||
-    batches.at(-1);
+  const activeBatch = batches.find(b => Number(b.quantity || 0) > 0) || batches.at(-1);
   if (activeBatch) {
     med.batchNo = activeBatch.batchNo || "";
     med.expiryDate = activeBatch.expiryDate || "";
@@ -883,6 +879,8 @@ async function renderInventory() {
         <td>${formatMoney(med.sellingPrice)}</td>
         <td>${formatMoney(med.wholesalePrice)}</td>
         <td>
+          ${canEdit ? `<button class="table-btn stock-plus" data-action="increase-stock" data-id="${med.id}" title="Increase stock by 1">+</button>` : ""}
+          ${canEdit ? `<button class="table-btn danger stock-minus" data-action="decrease-stock" data-id="${med.id}" title="Decrease stock by 1">−</button>` : ""}
           ${canEdit ? `<button class="table-btn" data-action="edit-medicine" data-id="${med.id}">Edit</button>` : ""}
           ${canEdit ? `<button class="table-btn danger" data-action="delete-medicine" data-id="${med.id}">Delete</button>` : ""}
         </td>
@@ -991,8 +989,8 @@ async function populateMedicineOptions() {
 }
 
 async function openMedicineForm(id = null) {
-  if (id && !requireRole(["Administrator", "Director", "Dispenser"])) {
-    showToast("Only Administrator, Director, or Dispenser can edit medicines.");
+  if (id && !requireRole(["Administrator", "Director"])) {
+    showToast("Only Admin or Director can edit medicines.");
     return;
   }
 
@@ -1026,13 +1024,11 @@ async function saveMedicine(event) {
 
   const id = $("medicineId").value ? Number($("medicineId").value) : null;
   const canSave = id
-    ? requireRole(["Administrator", "Director"])
+    ? requireRole(["Administrator", "Director", "Dispenser"])
     : requireRole(["Administrator", "Director", "Dispenser"]);
 
   if (!canSave) {
-    showToast(id
-      ? "Only Administrator, Director, or Dispenser can edit medicines."
-      : "Not allowed to add medicines.");
+    showToast(id ? "Only Admin or Director can edit medicines." : "Not allowed to add medicines.");
     return;
   }
 
@@ -1073,10 +1069,47 @@ async function saveMedicine(event) {
   }
 }
 
-async function deleteMedicine(id) {
+async function adjustMedicineStock(id, delta) {
   if (!requireRole(["Administrator", "Director", "Dispenser"])) {
-    return showToast("Only Administrator, Director, or Dispenser can delete medicines.");
+    return showToast("Only Administrator, Director, or Dispenser can adjust stock.");
   }
+
+  const med = await getById(STORE.medicines, Number(id));
+  if (!med) return showToast("Medicine not found.");
+
+  const amount = Number(delta);
+  if (!Number.isFinite(amount) || amount === 0) return;
+
+  const batches = Array.isArray(med.batches) ? [...med.batches] : getMedicineBatches(med);
+  const now = new Date().toISOString();
+
+  if (batches.length) {
+    // Use the last batch as the general stock bucket. Negative values are allowed.
+    const target = batches.at(-1);
+    target.quantity = Number(target.quantity || 0) + amount;
+    target.updatedAt = now;
+    med.batches = batches;
+    recalculateMedicineFromBatches(med);
+  } else {
+    med.quantity = Number(med.quantity || 0) + amount;
+  }
+
+  med.updatedAt = now;
+  await putRecord(STORE.medicines, med);
+  await writeAudit(amount > 0 ? "stock_increased" : "stock_decreased", {
+    medicineId: med.id,
+    name: med.name,
+    quantity: amount,
+    newStock: Number(med.quantity || 0)
+  });
+
+  showToast(`${med.name}: stock ${amount > 0 ? "increased" : "decreased"} by ${Math.abs(amount)}. New stock: ${Number(med.quantity || 0)}`);
+  await refreshAll();
+  if (typeof queueAutoSync === "function") queueAutoSync();
+}
+
+async function deleteMedicine(id) {
+  if (!requireRole(["Administrator", "Director"])) return showToast("Not allowed.");
   const med = await getById(STORE.medicines, id);
   if (!med) return;
   if (!confirm(`Delete ${med.name}?`)) return;
@@ -1540,6 +1573,15 @@ function renderPurchaseLines() {
   $("purchaseTotal").textContent = formatMoney(total);
 }
 
+function adjustPurchaseQty(delta) {
+  const input = $("purchaseQty");
+  if (!input) return;
+  const current = input.value === "" || input.value === "-" ? 0 : Number(input.value);
+  const next = (Number.isFinite(current) ? current : 0) + Number(delta);
+  input.value = String(next);
+  input.focus();
+}
+
 async function addPurchaseLine() {
   if (!requireRole(["Administrator", "Director"])) return showToast("Only Admin or Director can add purchases.");
 
@@ -1555,14 +1597,6 @@ async function addPurchaseLine() {
 
   const med = await getById(STORE.medicines, Number(medicineId));
   if (!med) return showToast("Medicine not found.");
-
-  const pendingQtyForMed = purchaseLines
-    .filter(line => Number(line.medicineId) === Number(medicineId))
-    .reduce((sum, line) => sum + Number(line.qty || 0), 0);
-
-  if (qty < 0 && Number(med.quantity || 0) + pendingQtyForMed + qty < 0) {
-    return showToast(`Cannot reduce by ${Math.abs(qty)}. Available stock is ${Number(med.quantity || 0) + pendingQtyForMed}.`);
-  }
 
   purchaseLines.push({
     medicineId,
@@ -1586,58 +1620,35 @@ async function completePurchase() {
 
   const supplierId = Number($("purchaseSupplierSelect").value) || null;
   const invoiceNo = $("purchaseInvoice").value.trim() || `PINV-${Date.now()}`;
-  const purchaseDate = normalizeDateInput(
-    $("purchaseDate").value || formatDateDisplay(new Date().toISOString())
-  );
-  const total = purchaseLines.reduce(
-    (sum, item) => sum + (Number(item.qty || 0) * Number(item.unitCost || 0)),
-    0
-  );
+  const purchaseDate = normalizeDateInput($("purchaseDate").value || formatDateDisplay(new Date().toISOString()));
+  const total = purchaseLines.reduce((sum, item) => sum + (item.qty * item.unitCost), 0);
 
   for (const line of purchaseLines) {
     const med = await getById(STORE.medicines, line.medicineId);
     if (!med) continue;
 
-    const batches = Array.isArray(med.batches)
-      ? [...med.batches]
-      : getMedicineBatches(med);
-
+    const batches = Array.isArray(med.batches) ? [...med.batches] : getMedicineBatches(med);
     const normalizedBatchNo = (line.batchNo || "").trim();
     const normalizedExpiry = line.expiryDate || "";
     const unitCost = Number(line.unitCost || 0);
     const qty = Number(line.qty || 0);
 
     if (qty < 0) {
-      /*
-       * NEGATIVE STOCK ADJUSTMENT
-       * ------------------------
-       * A negative quantity is now a real inventory reduction and is
-       * allowed to take the medicine below zero.
-       *
-       * If a batch is supplied, the negative quantity is applied to that
-       * batch. If no batch is supplied, create an adjustment batch so the
-       * total stock remains accurate even when the result is negative.
-       */
+      // Negative stock adjustment is ALWAYS allowed.
+      // Apply it to the selected batch when supplied; otherwise create a
+      // negative adjustment batch so total stock can go below zero.
       let targetBatch = null;
 
       if (normalizedBatchNo) {
         targetBatch = batches.find(
-          b =>
-            String(b.batchNo || "").trim().toLowerCase() ===
-            normalizedBatchNo.toLowerCase()
+          b => String(b.batchNo || "").trim().toLowerCase() === normalizedBatchNo.toLowerCase()
         );
       }
 
       if (targetBatch) {
-        targetBatch.quantity =
-          Number(targetBatch.quantity || 0) + qty;
+        targetBatch.quantity = Number(targetBatch.quantity || 0) + qty;
         targetBatch.updatedAt = new Date().toISOString();
       } else if (batches.length) {
-        /*
-         * No matching batch was selected. Keep the adjustment visible
-         * in stock history as its own negative batch instead of clamping
-         * the inventory at zero.
-         */
         batches.push({
           batchId: `ADJ-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
           batchNo: normalizedBatchNo || `ADJUSTMENT-${batches.length + 1}`,
@@ -1652,24 +1663,19 @@ async function completePurchase() {
           updatedAt: new Date().toISOString()
         });
       } else {
-        /*
-         * Legacy/unbatched medicine: keep its quantity directly.
-         */
         med.quantity = Number(med.quantity || 0) + qty;
       }
     } else {
       const matchingBatch = normalizedBatchNo
         ? batches.find(b =>
-            String(b.batchNo || "").trim().toLowerCase() ===
-              normalizedBatchNo.toLowerCase() &&
-            String(b.expiryDate || "") === normalizedExpiry &&
-            Number(b.unitCost || 0) === unitCost
-          )
+          String(b.batchNo || "").trim().toLowerCase() === normalizedBatchNo.toLowerCase() &&
+          String(b.expiryDate || "") === normalizedExpiry &&
+          Number(b.unitCost || 0) === unitCost
+        )
         : null;
 
       if (matchingBatch) {
-        matchingBatch.quantity =
-          Number(matchingBatch.quantity || 0) + qty;
+        matchingBatch.quantity = Number(matchingBatch.quantity || 0) + qty;
         matchingBatch.updatedAt = new Date().toISOString();
       } else {
         batches.push({
@@ -1686,12 +1692,10 @@ async function completePurchase() {
       }
     }
 
+    med.batches = batches;
     if (batches.length) {
-      med.batches = batches;
-      // Recalculate without ever forcing stock back to zero.
       recalculateMedicineFromBatches(med);
     }
-
     med.updatedAt = new Date().toISOString();
     await putRecord(STORE.medicines, med);
   }
@@ -1708,28 +1712,17 @@ async function completePurchase() {
     updatedAt: new Date().toISOString()
   });
 
-  await writeAudit("purchase_saved", {
-    invoiceNo,
-    total,
-    lines: purchaseLines.map(line => ({
-      medicineId: line.medicineId,
-      name: line.name,
-      quantity: Number(line.qty || 0)
-    }))
-  });
-
+  await writeAudit("purchase_saved", { invoiceNo, total });
   purchaseLines = [];
   $("purchaseInvoice").value = "";
   $("purchaseDate").value = "";
   renderPurchaseLines();
   showToast("Purchase / stock adjustment saved.");
   await refreshAll();
-
   if (typeof queueAutoSync === "function") {
     queueAutoSync();
   }
 }
-
 
 async function renderPurchasesHistory() {
   const table = $("purchasesHistoryTable");
@@ -3126,6 +3119,8 @@ function bindEvents() {
 
   $("expenseForm").addEventListener("submit", savePurchaseExpense);
   $("addPurchaseLineBtn").addEventListener("click", addPurchaseLine);
+  $("purchaseQtyPlusBtn")?.addEventListener("click", () => adjustPurchaseQty(1));
+  $("purchaseQtyMinusBtn")?.addEventListener("click", () => adjustPurchaseQty(-1));
   $("completePurchaseBtn").addEventListener("click", completePurchase);
   $("clearPurchaseBtn").addEventListener("click", () => { purchaseLines = []; renderPurchaseLines(); });
   $("refreshPurchasesHistoryBtn")?.addEventListener("click", renderPurchasesHistory);
@@ -3187,6 +3182,8 @@ function bindEvents() {
 
     if (action === "edit-medicine") await openMedicineForm(Number(id));
     if (action === "delete-medicine") await deleteMedicine(Number(id));
+    if (action === "increase-stock") await adjustMedicineStock(Number(id), 1);
+    if (action === "decrease-stock") await adjustMedicineStock(Number(id), -1);
     if (action === "edit-supplier") await openSupplierForm(Number(id));
     if (action === "delete-supplier") await deleteSupplier(Number(id));
     if (action === "view-receipt") await openSaleReceiptById(Number(id));
