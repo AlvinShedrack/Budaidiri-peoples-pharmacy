@@ -9,6 +9,12 @@
   <meta name="theme-color" content="#0f766e" />
   <meta name="apple-mobile-web-app-capable" content="yes" />
   <meta name="apple-mobile-web-app-title" content="Budadiri People's Pharmacy" />
+<style>
+.stock-qty-control{display:flex;align-items:center;gap:6px;min-width:180px}
+.stock-qty-control input{min-width:90px;flex:1}
+.stock-adjustment-help{margin-top:8px;font-size:.9rem}
+.stock-plus,.stock-minus{font-weight:800;min-width:34px}
+</style>
 </head>
 <body>
   <div id="toast" class="toast"></div>
@@ -180,7 +186,7 @@
           <div class="panel-header split">
             <div>
               <h2>Medicine Inventory</h2>
-              <p>Manage medicine catalog, prices, and inventory. Dispensers can edit and delete medicines.</p>
+              <p>Manage medicines and adjust stock. Use + to add stock and − to reduce stock. Negative stock is allowed.</p>
             </div>
             <button id="addMedicineBtn" class="primary-btn">Add Medicine</button>
           </div>
@@ -197,7 +203,7 @@
             <table>
               <thead>
                 <tr>
-                  <th>Medicine</th><th>Category</th><th>Buy</th><th>Sell</th><th>Wholesale</th><th>Actions</th>
+                  <th>Medicine</th><th>Category</th><th>Buy</th><th>Sell</th><th>Wholesale</th><th>Actions (+ / −)</th>
                 </tr>
               </thead>
               <tbody id="medicineTable"></tbody>
@@ -327,11 +333,14 @@
               <select id="purchaseMedicineSelect"></select>
               <input id="purchaseBatch" type="text" placeholder="Batch number" />
               <input id="purchaseExpiry" type="text" placeholder="Expiry (DD-MM-YYYY)" />
-              <input id="purchaseQty" type="number" step="any" inputmode="decimal" placeholder="Quantity (+ or -)" aria-label="Stock quantity, positive to increase and negative to decrease" />
+              <div class="stock-qty-control">
+                <button id="purchaseQtyMinusBtn" type="button" class="table-btn danger" title="Decrease stock">−</button>
+                <input id="purchaseQty" type="text" inputmode="decimal" autocomplete="off" placeholder="Quantity (+ or -)" aria-label="Stock quantity, positive adds and negative reduces" />
+                <button id="purchaseQtyPlusBtn" type="button" class="table-btn" title="Increase stock">+</button>
+              </div>
               <input id="purchaseCost" type="number" min="0" step="any" placeholder="Unit cost" />
               <button id="addPurchaseLineBtn" class="secondary-btn">Add Line</button>
             </div>
-            <p class="muted">Stock quantity: enter a positive number to increase stock or a negative number to decrease stock. Negative stock is allowed.</p>
             <div class="table-wrap">
               <table>
                 <thead>
