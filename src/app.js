@@ -873,8 +873,9 @@ async function renderInventory() {
 
     return `
       <tr>
-        <td><strong>${escapeHtml(med.name)}</strong><br><span class="muted">${escapeHtml(med.genericName || "")}</span>${batchHint}</td>
+        <td><strong>${escapeHtml(med.name)}</strong><br><span class="muted">${escapeHtml(med.genericName || "")}</span></td>
         <td>${escapeHtml(med.category || "")}</td>
+        <td class="stock-available-cell"><strong>${Number(med.quantity || 0)}</strong>${activeBatches.length ? `<br><span class="muted">${activeBatches.length} batch(es)</span>` : ""}</td>
         <td>${formatMoney(med.buyingPrice)}</td>
         <td>${formatMoney(med.sellingPrice)}</td>
         <td>${formatMoney(med.wholesalePrice)}</td>
