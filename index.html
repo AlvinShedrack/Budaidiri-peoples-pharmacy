@@ -327,7 +327,7 @@
               <select id="purchaseMedicineSelect"></select>
               <input id="purchaseBatch" type="text" placeholder="Batch number" />
               <input id="purchaseExpiry" type="text" placeholder="Expiry (DD-MM-YYYY)" />
-              <input id="purchaseQty" type="text" inputmode="text" pattern="-?[0-9]*\.?[0-9]*" placeholder="Quantity (+ or -)" />
+              <input id="purchaseQty" type="text" inputmode="text" autocomplete="off" placeholder="Quantity (+ or -)" />
               <input id="purchaseCost" type="number" min="0" step="any" placeholder="Unit cost" />
               <button id="addPurchaseLineBtn" class="secondary-btn">Add Line</button>
             </div>
@@ -343,7 +343,7 @@
           <div class="panel checkout-panel">
             <h2>Purchase Summary</h2>
             <div class="checkout-line total"><span>Total Cost</span><strong id="purchaseTotal">USh 0.00</strong></div>
-            <button id="completePurchaseBtn" class="primary-btn full">Save Purchase</button>
+            <button id="completePurchaseBtn" class="primary-btn full pharmacist-admin-only">Save Purchase</button>
             <button id="clearPurchaseBtn" class="ghost-btn full">Clear Lines</button>
           </div>
         </div>
@@ -645,4 +645,179 @@
         <div><label>Buying Price</label><input id="buyingPrice" type="number" min="0" step="any" required /></div>
         <div><label>Selling Price</label><input id="sellingPrice" type="number" min="0" step="any" required /></div>
         <div><label>Wholesale Price</label><input id="wholesalePrice" type="number" min="0" step="any" placeholder="Wholesale price" /></div>
-        <div><label>Reorder Level</label><input id="reorderLevel" type="number" min="
+        <div><label>Reorder Level</label><input id="reorderLevel" type="number" min="0" value="5" required /></div>
+        <div class="span-two"><label>Notes</label><input id="medicineNotes" /></div>
+        <div class="form-actions span-three">
+          <button type="button" class="ghost-btn" data-close="medicineModal">Cancel</button>
+          <button type="submit" class="primary-btn">Save Medicine</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <div id="supplierModal" class="modal hidden" role="dialog" aria-modal="true" aria-hidden="true" aria-labelledby="supplierModalTitle">
+    <div class="modal-card">
+      <div class="modal-header">
+        <h2 id="supplierModalTitle">Add Supplier</h2>
+        <button type="button" class="modal-close" data-close="supplierModal">×</button>
+      </div>
+      <form id="supplierForm" class="form-grid one">
+        <input type="hidden" id="supplierId" />
+        <div><label>Supplier Name</label><input id="supplierName" required /></div>
+        <div><label>Phone</label><input id="supplierPhone" /></div>
+        <div><label>Email</label><input id="supplierEmail" type="email" /></div>
+        <div><label>Address</label><input id="supplierAddress" /></div>
+        <div class="form-actions">
+          <button type="button" class="ghost-btn" data-close="supplierModal">Cancel</button>
+          <button type="submit" class="primary-btn">Save Supplier</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <div id="userModal" class="modal hidden" role="dialog" aria-modal="true" aria-hidden="true" aria-labelledby="userModalTitle">
+    <div class="modal-card">
+      <div class="modal-header">
+        <h2 id="userModalTitle">Add User</h2>
+        <button type="button" class="modal-close" data-close="userModal">×</button>
+      </div>
+      <form id="userForm" class="form-grid one">
+        <input type="hidden" id="userId" />
+        <div><label>Full Name</label><input id="userName" required /></div>
+        <div><label>Email</label><input id="userEmail" type="email" required /></div>
+        <div><label>Role</label><select id="userRole">
+                                  <option value="Dispenser">Level 0 - Dispenser</option>
+                                  <option value="Administrator">Level 1 - Administrator</option>
+                                  <option value="Director">Level 2 - Director</option>
+                                </select>
+        </div>
+        <div><label>Password</label><input id="userPassword" type="password" placeholder="Required for new user" /></div>
+        <div><label>Status</label><select id="userActive"><option value="true">Active</option><option value="false">Inactive</option></select></div>
+        <div class="form-actions">
+          <button type="button" class="ghost-btn" data-close="userModal">Cancel</button>
+          <button type="submit" class="primary-btn">Save User</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <div id="receiptModal" class="modal hidden" role="dialog" aria-modal="true" aria-hidden="true" aria-label="Sales receipt">
+    <div class="modal-card receipt-card">
+      <div class="modal-header no-print">
+        <h2>Receipt</h2>
+        <button type="button" class="modal-close" data-close="receiptModal">×</button>
+      </div>
+      <div id="receiptContent" class="receipt-content"></div>
+      <div class="form-actions no-print">
+        <button type="button" class="ghost-btn" data-close="receiptModal">Close</button>
+        <button type="button" id="printReceiptBtn" class="primary-btn">Print / Export PDF</button>
+      </div>
+    </div>
+  </div>
+  
+  <div id="invoiceViewModal" class="modal hidden" role="dialog" aria-modal="true" aria-hidden="true" aria-labelledby="invoiceViewModalTitle">
+    <div class="modal-card large">
+      <div class="modal-header">
+        <h2 id="invoiceViewModalTitle">Purchase Invoice Details</h2>
+        <button type="button" class="modal-close" data-close="invoiceViewModal">×</button>
+      </div>
+      <div id="invoiceViewContent"></div>
+      <div class="form-actions">
+        <button type="button" class="ghost-btn" data-close="invoiceViewModal">Close</button>
+        <button type="button" id="printInvoiceModalBtn" class="primary-btn">Print Invoice</button>
+      </div>
+    </div>
+  </div>
+  
+
+  <div id="editSaleModal" class="modal hidden" role="dialog" aria-modal="true" aria-hidden="true" aria-labelledby="editSaleModalTitle">
+    <div class="modal-card large">
+      <div class="modal-header">
+        <h2 id="editSaleModalTitle">Edit Sale</h2>
+        <button type="button" class="modal-close" data-close="editSaleModal">×</button>
+      </div>
+      <form id="editSaleForm" class="form-grid">
+        <input type="hidden" id="editSaleId" />
+        <div class="form-grid three">
+          <div><label>Customer / Patient</label><input id="editSaleCustomer" /></div>
+          <div><label>Payment Method</label><select id="editSalePaymentMethod"><option>Cash</option><option>Mobile Money</option><option>Card</option><option>Credit</option></select></div>
+          <div><label>Sale Type</label><select id="editSaleType"><option value="retail">Retail</option><option value="wholesale">Wholesale</option></select></div>
+        </div>
+        <div class="sale-add-row">
+          <select id="editSaleAddMedicineSelect"></select>
+          <select id="editSaleAddBatchSelect" title="Select batch"></select>
+          <button type="button" id="editSaleAddItemBtn" class="secondary-btn">Add Item</button>
+        </div>
+        <div class="table-wrap"><table><thead><tr><th>Medicine</th><th>Batch</th><th>Qty</th><th>Unit Price</th><th>Discount</th><th>Total</th><th></th></tr></thead><tbody id="editSaleLinesTable"></tbody></table></div>
+        <div class="form-grid four">
+          <div><label>Subtotal</label><input id="editSaleSubtotalDisplay" readonly /></div>
+          <div><label>Discount</label><input id="editSaleDiscountDisplay" readonly /></div>
+          <div><label>Total</label><input id="editSaleTotalDisplay" readonly /></div>
+          <div><label>Amount Paid</label><input id="editSaleAmountPaid" type="number" min="0" step="any" /></div>
+          <div><label>Change</label><input id="editSaleChangeGiven" readonly /></div>
+        </div>
+        <div class="form-actions"><button type="button" class="ghost-btn" data-close="editSaleModal">Cancel</button><button type="submit" class="primary-btn">Save Sale Changes</button></div>
+      </form>
+    </div>
+  </div>
+
+  <div id="editPurchaseModal" class="modal hidden" role="dialog" aria-modal="true" aria-hidden="true" aria-labelledby="editPurchaseModalTitle">
+    <div class="modal-card large">
+      <div class="modal-header">
+        <h2 id="editPurchaseModalTitle">Edit Purchase Invoice</h2>
+        <button type="button" class="modal-close" data-close="editPurchaseModal">×</button>
+      </div>
+      <form id="editPurchaseForm" class="form-grid">
+        <input type="hidden" id="editPurchaseId" />
+        <div class="form-grid three">
+          <div>
+            <label>Supplier</label>
+            <select id="editPurchaseSupplier"></select>
+          </div>
+          <div>
+            <label>Invoice Number</label>
+            <input id="editPurchaseInvoiceNo" required />
+          </div>
+          <div>
+            <label>Purchase Date</label>
+            <input id="editPurchaseDate" type="text" placeholder="DD-MM-YYYY" />
+          </div>
+        </div>
+  
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>Medicine</th>
+                <th>Batch No</th>
+                <th>Expiry</th>
+                <th>Qty</th>
+                <th>Unit Cost</th>
+                <th>Line Total</th>
+              </tr>
+            </thead>
+            <tbody id="editPurchaseLinesTable"></tbody>
+          </table>
+        </div>
+  
+        <div class="checkout-line total">
+          <span>Updated Invoice Total</span>
+          <strong id="editPurchaseTotal">USh 0.00</strong>
+        </div>
+  
+        <div class="form-actions">
+          <button type="button" class="ghost-btn" data-close="editPurchaseModal">Cancel</button>
+          <button type="submit" class="primary-btn">Save Invoice Changes</button>
+        </div>
+      </form>
+    </div>
+  </div>
+  <footer class="app-footer">Developed by Alvin Shedrack © 2026</footer>
+  <script src="./src/db.js"></script>
+  <script src="https://unpkg.com/html2pdf.js@0.9.2/dist/html2pdf.bundle.min.js"></script>
+  <button type="button" class="floating-sync-btn sync-now-btn no-print" aria-label="Sync data" title="Sync data">↻sync</button>  
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="./src/sync.js"></script>
+  <script src="./src/app.js"></script>
+</body>
+</html>
