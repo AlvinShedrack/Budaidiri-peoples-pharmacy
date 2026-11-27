@@ -139,15 +139,15 @@
           </article>
           <article class="stat-card success">
             <span>Today's Sales</span>
-            <strong id="dashTodaySales">USh 0</strong>
+            <strong id="dashTodaySales">USh 0.00</strong>
           </article>
           <article class="stat-card">
             <span>Today's Profit</span>
-            <strong id="dashTodayProfit">USh 0</strong>
+            <strong id="dashTodayProfit">USh 0.00</strong>
           </article>
           <article class="stat-card">
             <span>Stock Value</span>
-            <strong id="dashStockValue">USh 0</strong>
+            <strong id="dashStockValue">USh 0.00</strong>
           </article>
         </div>
 
@@ -240,9 +240,9 @@
             <div class="sale-add-row">
               <select id="saleMedicineSelect"></select>
               <select id="saleBatchSelect" title="Select batch"></select>
-              <input id="saleQty" type="number" min="1" placeholder="Quantity" />
+              <input id="saleQty" type="number" min="0.01" step="any" placeholder="Quantity" />
               <input id="salePrice" type="number" min="0" step="any" placeholder="Unit price" />
-              <input id="saleDiscount" type="number" min="0" placeholder="Discount" />
+              <input id="saleDiscount" type="number" min="0" step="any" placeholder="Discount" />
               <button id="addToCartBtn" class="secondary-btn">Add to Cart</button>
             </div>
             <div class="table-wrap">
@@ -257,9 +257,9 @@
 
           <div class="panel checkout-panel">
             <h2>Checkout</h2>
-            <div class="checkout-line"><span>Subtotal</span><strong id="cartSubtotal">USh 0</strong></div>
-            <div class="checkout-line"><span>Total Discount</span><strong id="cartDiscount">USh 0</strong></div>
-            <div class="checkout-line total"><span>Total</span><strong id="cartTotal">USh 0</strong></div>
+            <div class="checkout-line"><span>Subtotal</span><strong id="cartSubtotal">USh 0.00</strong></div>
+            <div class="checkout-line"><span>Total Discount</span><strong id="cartDiscount">USh 0.00</strong></div>
+            <div class="checkout-line total"><span>Total</span><strong id="cartTotal">USh 0.00</strong></div>
             <button id="completeSaleBtn" class="primary-btn full">Complete Sale</button>
             <button id="clearCartBtn" class="ghost-btn full">Clear Cart</button>
           </div>
@@ -300,7 +300,7 @@
             <div class="panel-header split">
               <div>
                 <h2>Stock In / Purchases</h2>
-                <p>Record supplier purchases and increase stock automatically.</p>
+                <p>Record supplier purchases (use negative quantity to reduce stock).</p>
               </div>
 
               <button id="exportPurchasesCsvBtn" class="secondary-btn">
@@ -327,8 +327,8 @@
               <select id="purchaseMedicineSelect"></select>
               <input id="purchaseBatch" type="text" placeholder="Batch number" />
               <input id="purchaseExpiry" type="text" placeholder="Expiry (DD-MM-YYYY)" />
-              <input id="purchaseQty" type="number" min="1" placeholder="Quantity" />
-              <input id="purchaseCost" type="number" min="0" placeholder="Unit cost" />
+              <input id="purchaseQty" type="number" step="any" placeholder="Quantity (+ or -)" />
+              <input id="purchaseCost" type="number" min="0" step="any" placeholder="Unit cost" />
               <button id="addPurchaseLineBtn" class="secondary-btn">Add Line</button>
             </div>
             <div class="table-wrap">
@@ -342,7 +342,7 @@
           </div>
           <div class="panel checkout-panel">
             <h2>Purchase Summary</h2>
-            <div class="checkout-line total"><span>Total Cost</span><strong id="purchaseTotal">USh 0</strong></div>
+            <div class="checkout-line total"><span>Total Cost</span><strong id="purchaseTotal">USh 0.00</strong></div>
             <button id="completePurchaseBtn" class="primary-btn full pharmacist-admin-only">Save Purchase</button>
             <button id="clearPurchaseBtn" class="ghost-btn full">Clear Lines</button>
           </div>
@@ -407,7 +407,7 @@
 
             <div>
               <label>Amount</label>
-              <input id="expenseAmount" type="number" min="0" placeholder="Amount" required />
+              <input id="expenseAmount" type="number" min="0" step="any" placeholder="Amount" required />
             </div>
 
             <div>
@@ -432,7 +432,7 @@
 
           <div class="checkout-line total">
             <span>Total Expenses</span>
-            <strong id="purchaseExpensesTotal">USh 0</strong>
+            <strong id="purchaseExpensesTotal">USh 0.00</strong>
           </div>
 
           <div class="table-wrap">
@@ -513,12 +513,12 @@
           <div class="cards-grid compact">
             <article class="stat-card success">
               <span>Selected Day Sales</span>
-              <strong id="reportSalesTotal">USh 0</strong>
+              <strong id="reportSalesTotal">USh 0.00</strong>
             </article>
 
             <article class="stat-card">
               <span>Selected Day Profit</span>
-              <strong id="reportProfitTotal">USh 0</strong>
+              <strong id="reportProfitTotal">USh 0.00</strong>
             </article>
 
             <article class="stat-card warning">
@@ -642,9 +642,9 @@
         <div><label>Medicine Name</label><input id="medicineName" required /></div>
         <div><label>Generic Name</label><input id="genericName" /></div>
         <div><label>Category</label><input id="category" placeholder="Antibiotic, Painkiller..." /></div>
-        <div><label>Buying Price</label><input id="buyingPrice" type="number" min="0" required /></div>
-        <div><label>Selling Price</label><input id="sellingPrice" type="number" min="0" required /></div>
-        <div><label>Wholesale Price</label><input id="wholesalePrice" type="number" min="0" placeholder="Wholesale price" /></div>
+        <div><label>Buying Price</label><input id="buyingPrice" type="number" min="0" step="any" required /></div>
+        <div><label>Selling Price</label><input id="sellingPrice" type="number" min="0" step="any" required /></div>
+        <div><label>Wholesale Price</label><input id="wholesalePrice" type="number" min="0" step="any" placeholder="Wholesale price" /></div>
         <div><label>Reorder Level</label><input id="reorderLevel" type="number" min="0" value="5" required /></div>
         <div class="span-two"><label>Notes</label><input id="medicineNotes" /></div>
         <div class="form-actions span-three">
@@ -802,7 +802,7 @@
   
         <div class="checkout-line total">
           <span>Updated Invoice Total</span>
-          <strong id="editPurchaseTotal">USh 0</strong>
+          <strong id="editPurchaseTotal">USh 0.00</strong>
         </div>
   
         <div class="form-actions">
