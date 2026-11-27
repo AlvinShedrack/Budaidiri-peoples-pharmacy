@@ -43,7 +43,8 @@ function $(id) {
 
 function formatMoney(amount) {
   return "USh " + Number(amount || 0).toLocaleString("en-UG", {
-    maximumFractionDigits: 0
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2
   });
 }
 
@@ -556,7 +557,7 @@ function recalcEditSaleModalTotals() {
   if ($("editSaleSubtotalDisplay")) $("editSaleSubtotalDisplay").value = formatMoney(subtotal);
   if ($("editSaleDiscountDisplay")) $("editSaleDiscountDisplay").value = formatMoney(totalDiscount);
   if ($("editSaleTotalDisplay")) $("editSaleTotalDisplay").value = formatMoney(grandTotal);
-  if ($("editSaleChangeGiven")) $("editSaleChangeGiven").value = changeGiven.toFixed(0);
+  if ($("editSaleChangeGiven")) $("editSaleChangeGiven").value = changeGiven.toFixed(2);
 }
 
 async function populateEditSaleAddMedicineOptions(selectedMedId = null) {
@@ -901,7 +902,7 @@ async function getDefaultSalePriceForMedicine(med, saleType) {
   if (!med) return 0;
   const baseSelling = Number(med.sellingPrice || 0);
   if (saleType === "wholesale") {
-    return med.wholesalePrice ? Number(med.wholesalePrice) : Math.round(baseSelling * 0.9);
+    return med.wholesalePrice ? Number(med.wholesalePrice) : Number((baseSelling * 0.9).toFixed(2));
   }
   return baseSelling;
 }
@@ -975,7 +976,7 @@ async function populateMedicineOptions() {
 
   const purchaseOptions = medicines
     .sort((a, b) => String(a.name || "").localeCompare(String(b.name || "")))
-    .map(med => `<option value="${med.id}">${escapeHtml(med.name)}</option>`)
+    .map(med => `<option value="${med.id}">${escapeHtml(med.name)} (Stock: ${Number(med.quantity || 0)})</option>`)
     .join("");
 
   $("saleMedicineSelect").innerHTML = saleOptions || `<option value="">No sellable medicine available</option>`;
@@ -1540,10 +1541,20 @@ async function addPurchaseLine() {
   const qty = Number($("purchaseQty").value || 0);
   const unitCost = Number($("purchaseCost").value || 0);
 
-  if (!medicineId || qty <= 0 || unitCost < 0) return showToast("Select medicine, quantity, and unit cost.");
+  if (!medicineId || qty === 0 || Number.isNaN(qty) || unitCost < 0) {
+    return showToast("Select medicine, non-zero quantity, and valid unit cost.");
+  }
 
   const med = await getById(STORE.medicines, Number(medicineId));
   if (!med) return showToast("Medicine not found.");
+
+  const pendingQtyForMed = purchaseLines
+    .filter(line => Number(line.medicineId) === Number(medicineId))
+    .reduce((sum, line) => sum + Number(line.qty || 0), 0);
+
+  if (qty < 0 && Number(med.quantity || 0) + pendingQtyForMed + qty < 0) {
+    return showToast(`Cannot reduce by ${Math.abs(qty)}. Available stock is ${Number(med.quantity || 0) + pendingQtyForMed}.`);
+  }
 
   purchaseLines.push({
     medicineId,
@@ -1580,33 +1591,65 @@ async function completePurchase() {
     const unitCost = Number(line.unitCost || 0);
     const qty = Number(line.qty || 0);
 
-    const matchingBatch = normalizedBatchNo
-      ? batches.find(b =>
-        String(b.batchNo || "").trim().toLowerCase() === normalizedBatchNo.toLowerCase() &&
-        String(b.expiryDate || "") === normalizedExpiry &&
-        Number(b.unitCost || 0) === unitCost
-      )
-      : null;
+    if (qty < 0) {
+      let remainingToDeduct = Math.abs(qty);
 
-    if (matchingBatch) {
-      matchingBatch.quantity = Number(matchingBatch.quantity || 0) + qty;
-      matchingBatch.updatedAt = new Date().toISOString();
+      if (normalizedBatchNo) {
+        const targetBatch = batches.find(
+          b => String(b.batchNo || "").trim().toLowerCase() === normalizedBatchNo.toLowerCase()
+        );
+        if (targetBatch) {
+          const take = Math.min(Number(targetBatch.quantity || 0), remainingToDeduct);
+          targetBatch.quantity = Number(targetBatch.quantity || 0) - take;
+          targetBatch.updatedAt = new Date().toISOString();
+          remainingToDeduct -= take;
+        }
+      }
+
+      if (remainingToDeduct > 0) {
+        for (const b of batches) {
+          if (remainingToDeduct <= 0) break;
+          const take = Math.min(Number(b.quantity || 0), remainingToDeduct);
+          b.quantity = Number(b.quantity || 0) - take;
+          b.updatedAt = new Date().toISOString();
+          remainingToDeduct -= take;
+        }
+      }
+
+      if (!batches.length) {
+        med.quantity = Math.max(0, Number(med.quantity || 0) + qty);
+      }
     } else {
-      batches.push({
-        batchId: `B-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
-        batchNo: normalizedBatchNo || `BATCH-${batches.length + 1}`,
-        expiryDate: normalizedExpiry,
-        quantity: qty,
-        unitCost,
-        invoiceNo,
-        supplierId,
-        purchaseDate,
-        createdAt: new Date().toISOString()
-      });
+      const matchingBatch = normalizedBatchNo
+        ? batches.find(b =>
+          String(b.batchNo || "").trim().toLowerCase() === normalizedBatchNo.toLowerCase() &&
+          String(b.expiryDate || "") === normalizedExpiry &&
+          Number(b.unitCost || 0) === unitCost
+        )
+        : null;
+
+      if (matchingBatch) {
+        matchingBatch.quantity = Number(matchingBatch.quantity || 0) + qty;
+        matchingBatch.updatedAt = new Date().toISOString();
+      } else {
+        batches.push({
+          batchId: `B-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
+          batchNo: normalizedBatchNo || `BATCH-${batches.length + 1}`,
+          expiryDate: normalizedExpiry,
+          quantity: qty,
+          unitCost,
+          invoiceNo,
+          supplierId,
+          purchaseDate,
+          createdAt: new Date().toISOString()
+        });
+      }
     }
 
     med.batches = batches;
-    recalculateMedicineFromBatches(med);
+    if (batches.length) {
+      recalculateMedicineFromBatches(med);
+    }
     med.updatedAt = new Date().toISOString();
     await putRecord(STORE.medicines, med);
   }
@@ -1628,7 +1671,7 @@ async function completePurchase() {
   $("purchaseInvoice").value = "";
   $("purchaseDate").value = "";
   renderPurchaseLines();
-  showToast("Purchase saved as batch stock.");
+  showToast("Purchase / stock adjustment saved.");
   await refreshAll();
   if (typeof queueAutoSync === "function") {
     queueAutoSync();
@@ -1796,7 +1839,7 @@ function recalcEditPurchaseTotal() {
   rows.forEach(row => {
     const qty = Number(row.querySelector('[name="lineQty"]')?.value || 0);
     const cost = Number(row.querySelector('[name="lineCost"]')?.value || 0);
-    const lineTotal = Math.max(0, qty) * Math.max(0, cost);
+    const lineTotal = qty * Math.max(0, cost);
     sum += lineTotal;
     const cell = row.querySelector(".edit-line-total");
     if (cell) cell.textContent = formatMoney(lineTotal);
@@ -1827,7 +1870,7 @@ async function openEditPurchaseModal(id) {
         <td><strong>${escapeHtml(line.name)}</strong></td>
         <td><input class="table-input" name="lineBatch" value="${escapeHtml(line.batchNo || "")}" /></td>
         <td><input class="table-input" name="lineExpiry" value="${escapeHtml(line.expiryDate || "")}" placeholder="DD-MM-YYYY" /></td>
-        <td><input class="table-input" type="number" min="0" name="lineQty" value="${qty}" /></td>
+        <td><input class="table-input" type="number" step="any" name="lineQty" value="${qty}" /></td>
         <td><input class="table-input" type="number" min="0" step="any" name="lineCost" value="${cost}" /></td>
         <td class="edit-line-total">${formatMoney(qty * cost)}</td>
       </tr>
@@ -1855,7 +1898,7 @@ async function saveEditedPurchase(event) {
       ...orig,
       batchNo: row.querySelector('[name="lineBatch"]').value.trim(),
       expiryDate: normalizeDateInput(row.querySelector('[name="lineExpiry"]').value.trim()),
-      qty: Math.max(0, Number(row.querySelector('[name="lineQty"]').value || 0)),
+      qty: Number(row.querySelector('[name="lineQty"]').value || 0),
       unitCost: Math.max(0, Number(row.querySelector('[name="lineCost"]').value || 0))
     };
   });
