@@ -180,7 +180,7 @@
           <div class="panel-header split">
             <div>
               <h2>Medicine Inventory</h2>
-              <p>Manage medicine catalog, buying, selling, and wholesale prices.</p>
+              <p>Manage medicine catalog, prices, and inventory. Dispensers can edit and delete medicines.</p>
             </div>
             <button id="addMedicineBtn" class="primary-btn">Add Medicine</button>
           </div>
@@ -327,10 +327,11 @@
               <select id="purchaseMedicineSelect"></select>
               <input id="purchaseBatch" type="text" placeholder="Batch number" />
               <input id="purchaseExpiry" type="text" placeholder="Expiry (DD-MM-YYYY)" />
-              <input id="purchaseQty" type="text" inputmode="text" autocomplete="off" placeholder="Quantity (+ or -)" />
+              <input id="purchaseQty" type="number" step="any" inputmode="decimal" placeholder="Quantity (+ or -)" aria-label="Stock quantity, positive to increase and negative to decrease" />
               <input id="purchaseCost" type="number" min="0" step="any" placeholder="Unit cost" />
               <button id="addPurchaseLineBtn" class="secondary-btn">Add Line</button>
             </div>
+            <p class="muted">Stock quantity: enter a positive number to increase stock or a negative number to decrease stock. Negative stock is allowed.</p>
             <div class="table-wrap">
               <table>
                 <thead>
