@@ -6879,3 +6879,42 @@ body.modal-open {
   background: #ffffff;
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.08);
 }
+@media print {
+  .receipt-content {
+    font-size: 16px !important;
+    line-height: 1.45 !important;
+  }
+
+  .receipt-brand-header h2 {
+    font-size: 24px !important;
+  }
+
+  .receipt-brand-header p,
+  .receipt-contact-line {
+    font-size: 14px !important;
+  }
+
+  .receipt-title {
+    font-size: 22px !important;
+  }
+
+  .receipt-meta-grid,
+  .receipt-total-line {
+    font-size: 15px !important;
+  }
+
+  .receipt-content table,
+  .receipt-content thead th,
+  .receipt-content td {
+    font-size: 15px !important;
+    padding: 8px 6px !important;
+  }
+
+  .receipt-total-line.grand {
+    font-size: 22px !important;
+  }
+
+  .receipt-footer-note {
+    font-size: 15px !important;
+  }
+}
