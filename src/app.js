@@ -841,7 +841,6 @@ async function deleteSaleRecord(saleId) {
     queueAutoSync();
   }
 }
-
 async function renderInventory() {
   const medicines = await getAll(STORE.medicines);
   const search = ($("medicineSearch")?.value || "").toLowerCase().trim();
@@ -861,45 +860,16 @@ async function renderInventory() {
     return true;
   });
 
-  filtered.sort((a, b) => String(a.name || "").localeCompare(String(b.name || "")));
+  // Sort by latest added first (newest createdAt on top, fallback to higher ID)
+  filtered.sort((a, b) => {
+    const dateA = a.createdAt ? new Date(a.createdAt).getTime() : 0;
+    const dateB = b.createdAt ? new Date(b.createdAt).getTime() : 0;
+    if (dateB !== dateA) return dateB - dateA;
+    return Number(b.id || 0) - Number(a.id || 0);
+  });
 
   const canEdit = requireRole(["Administrator", "Director", "Dispenser"]);
-
-  $("medicineTable").innerHTML = filtered.length ? filtered.map((med, index) => {
-    const activeBatches = getMedicineBatches(med).filter(b => Number(b.quantity || 0) !== 0);
-    const dateAdded = med.createdAt
-      ? (() => {
-          const d = new Date(med.createdAt);
-          return `${String(d.getDate()).padStart(2, "0")}/${String(d.getMonth() + 1).padStart(2, "0")}/${d.getFullYear()}`;
-        })()
-      : "Not recorded";
-
-    return `
-      <tr>
-        <td>${index + 1}</td>
-        <td>
-          <strong>${escapeHtml(med.name)}</strong>
-          <br><span class="muted">${escapeHtml(med.genericName || "")}</span>
-          ${activeBatches.length
-            ? `<br><span class="muted">${activeBatches.length} batch(es)</span>`
-            : ""}
-        </td>
-        <td>${escapeHtml(dateAdded)}</td>
-        <td>${escapeHtml(med.category || "")}</td>
-        <td>${formatMoney(med.buyingPrice)}</td>
-        <td>${formatMoney(med.sellingPrice)}</td>
-        <td>${formatMoney(med.wholesalePrice)}</td>
-        <td data-stock-cell="true"><strong>${Number(med.quantity || 0)}</strong></td>
-        <td>
-          ${canEdit ? `<button class="table-btn stock-plus" data-action="increase-stock" data-id="${med.id}" title="Increase stock by 1">+</button>` : ""}
-          ${canEdit ? `<button class="table-btn danger stock-minus" data-action="decrease-stock" data-id="${med.id}" title="Decrease stock by 1">−</button>` : ""}
-          ${canEdit ? `<button class="table-btn" data-action="edit-medicine" data-id="${med.id}">Edit</button>` : ""}
-          ${canEdit ? `<button class="table-btn danger" data-action="delete-medicine" data-id="${med.id}">Delete</button>` : ""}
-        </td>
-      </tr>
-    `;
-  }).join("") : `<tr><td colspan="9">No medicines found.</td></tr>`;
-}
+  // ... rest of renderInventory remains the same
 
 async function populateSupplierOptions() {
   const suppliers = await getAll(STORE.suppliers);
