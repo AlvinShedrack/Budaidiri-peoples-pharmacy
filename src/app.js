@@ -3071,10 +3071,10 @@ function printElement(elementId, title = "Print") {
         <style>
           @page { size: A4; margin: 0; }
           html, body { margin: 0 !important; padding: 0 !important; background: white !important; }
-          body { padding: 10mm !important; font-family: Arial, sans-serif; }
+          body { padding: 10mm !important; font-family: Arial, sans-serif; font-size: 15px; }
           .no-print, button { display: none !important; }
           a[href]::after { content: "" !important; }
-          .panel, .receipt-content { box-shadow: none !important; border: none !important; }
+          .panel, .receipt-content { box-shadow: none !important; border: none !important; font-size: 15px; }
           .table-wrap { overflow: visible !important; }
           table { page-break-inside: auto; }
           tr { page-break-inside: avoid; page-break-after: auto; }
