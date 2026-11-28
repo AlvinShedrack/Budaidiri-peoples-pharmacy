@@ -859,7 +859,7 @@ async function renderInventory() {
     if (filter === "expired") return med.expiryDate && d < 0;
     return true;
   });
-
+}
   // Sort by latest added first (newest createdAt on top, fallback to higher ID)
   filtered.sort((a, b) => {
     const dateA = a.createdAt ? new Date(a.createdAt).getTime() : 0;
