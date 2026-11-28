@@ -168,18 +168,35 @@ function showRealError(stage, error) {
 }
 
 function normalizeText(value) {
-  return String(value || "").trim().toLowerCase();
+  return String(value || "")
+    .trim()
+    .toLowerCase()
+    .replace(/\s+/g, " ");
+}
+
+function getMedicineIdentityKey(record) {
+  const name = normalizeText(record?.name);
+  const generic = normalizeText(record?.genericName);
+  const category = normalizeText(record?.category);
+  if (!name && !generic && !category) return null;
+  return `medicines:norm:${name}|${generic}|${category}`;
 }
 
 function isDeletedRecord(record) {
   return record?._deleted === true || String(record?._deleted).toLowerCase() === "true";
 }
 
-function getRecordTime(record) {
-  const value = record?.updatedAt || record?.createdAt || 0;
+function parseTimestamp(value) {
+  if (!value) return 0;
+  if (typeof value === "number") return Number.isFinite(value) ? value : 0;
   const time = new Date(value).getTime();
-
   return Number.isNaN(time) ? 0 : time;
+}
+
+function getRecordTime(record) {
+  const updated = parseTimestamp(record?.updatedAt);
+  const created = parseTimestamp(record?.createdAt);
+  return Math.max(updated, created);
 }
 
 function getRecordIdentityKey(storeName, record) {
@@ -200,11 +217,118 @@ function getRecordIdentityKey(storeName, record) {
     if (supplierName) return "suppliers:name:" + supplierName;
   }
 
+  if (storeName === "medicines") {
+    const medKey = getMedicineIdentityKey(record);
+    if (medKey) return medKey;
+  }
+
   if (record.id !== undefined && record.id !== null) {
     return storeName + ":id:" + String(record.id);
   }
 
   return null;
+}
+
+function getBatchKey(batch, index = 0) {
+  if (batch?.batchId) {
+    return "batchId:" + normalizeText(batch.batchId);
+  }
+  const batchNo = normalizeText(batch?.batchNo);
+  const expiry = String(batch?.expiryDate || "").trim();
+  const cost = Number(batch?.unitCost ?? 0);
+  if (batchNo || expiry) {
+    return `batchMeta:${batchNo}|${expiry}|${cost}`;
+  }
+  return `batchIdx:${index}`;
+}
+
+function mergeBatches(localMed, remoteMed) {
+  const localBatches = typeof getMedicineBatches === "function"
+    ? getMedicineBatches(localMed)
+    : (Array.isArray(localMed?.batches) ? localMed.batches : []);
+
+  const remoteBatches = typeof getMedicineBatches === "function"
+    ? getMedicineBatches(remoteMed)
+    : (Array.isArray(remoteMed?.batches) ? remoteMed.batches : []);
+
+  const batchMap = new Map();
+
+  localBatches.forEach((b, idx) => {
+    batchMap.set(getBatchKey(b, idx), { ...b });
+  });
+
+  remoteBatches.forEach((rb, idx) => {
+    const key = getBatchKey(rb, idx);
+    const existing = batchMap.get(key);
+
+    if (!existing) {
+      batchMap.set(key, { ...rb });
+      return;
+    }
+
+    const existingTs = getRecordTime(existing);
+    const remoteTs = getRecordTime(rb);
+
+    if (remoteTs > existingTs) {
+      batchMap.set(key, {
+        ...existing,
+        ...rb,
+        quantity: rb.quantity !== undefined ? Number(rb.quantity) : Number(existing.quantity || 0)
+      });
+    } else if (remoteTs === existingTs) {
+      batchMap.set(key, {
+        ...rb,
+        ...existing,
+        quantity: Math.max(Number(existing.quantity || 0), Number(rb.quantity || 0))
+      });
+    } else {
+      batchMap.set(key, {
+        ...rb,
+        ...existing
+      });
+    }
+  });
+
+  return Array.from(batchMap.values());
+}
+
+function mergeMedicineRecords(existing, incoming) {
+  if (!existing) return { ...incoming };
+  if (!incoming) return { ...existing };
+
+  const existingTime = getRecordTime(existing);
+  const incomingTime = getRecordTime(incoming);
+
+  // Incoming is strictly newer -> incoming wins scalar fields; otherwise existing wins
+  const newer = incomingTime > existingTime ? incoming : existing;
+  const older = incomingTime > existingTime ? existing : incoming;
+
+  const mergedBatches = mergeBatches(existing, incoming);
+
+  const merged = {
+    ...older,
+    ...newer,
+    id: existing.id ?? incoming.id,
+    name: newer.name || older.name,
+    genericName: newer.genericName || older.genericName || "",
+    category: newer.category || older.category || "",
+    buyingPrice: Number(newer.buyingPrice ?? older.buyingPrice ?? 0),
+    sellingPrice: Number(newer.sellingPrice ?? older.sellingPrice ?? 0),
+    wholesalePrice: Number(newer.wholesalePrice ?? older.wholesalePrice ?? 0),
+    reorderLevel: Number(newer.reorderLevel ?? older.reorderLevel ?? 5),
+    notes: newer.notes !== undefined && newer.notes !== "" ? newer.notes : (older.notes || ""),
+    batches: mergedBatches,
+    createdAt: existing.createdAt || incoming.createdAt || new Date().toISOString(),
+    updatedAt: new Date(Math.max(existingTime, incomingTime)).toISOString()
+  };
+
+  if (mergedBatches.length > 0 && typeof recalculateMedicineFromBatches === "function") {
+    recalculateMedicineFromBatches(merged);
+  } else {
+    merged.quantity = Number(newer.quantity ?? older.quantity ?? 0);
+  }
+
+  return merged;
 }
 
 function markDirtyRecord(storeName, record, deleted = false) {
@@ -218,7 +342,7 @@ function markDirtyRecord(storeName, record, deleted = false) {
     ...record,
     _deleted: deleted ? true : record._deleted,
     deletedAt: deleted ? (record.deletedAt || now) : record.deletedAt,
-    updatedAt: now
+    updatedAt: record.updatedAt || now
   };
 
   const dirtyMap = getDirtyMap();
@@ -284,15 +408,16 @@ function prepareRecordForCloud(storeName, record) {
 
 function recordFromCloud(row) {
   const cloudRecord = row.data || {};
+  const fallbackTs = parseTimestamp(cloudRecord.updatedAt)
+    || parseTimestamp(cloudRecord.createdAt)
+    || parseTimestamp(row.updated_at)
+    || parseTimestamp(row.synced_at)
+    || 0;
 
   return {
     ...cloudRecord,
     id: cloudRecord.id ?? Number(row.local_id),
-    updatedAt:
-      cloudRecord.updatedAt ||
-      row.updated_at ||
-      row.synced_at ||
-      new Date().toISOString()
+    updatedAt: cloudRecord.updatedAt || row.updated_at || (fallbackTs ? new Date(fallbackTs).toISOString() : undefined)
   };
 }
 
@@ -308,12 +433,17 @@ function mergeRecords(storeName, records) {
     const existing = merged.get(key);
 
     if (!existing) {
-      merged.set(key, record);
+      merged.set(key, { ...record });
+      return;
+    }
+
+    if (storeName === "medicines") {
+      merged.set(key, mergeMedicineRecords(existing, record));
       return;
     }
 
     if (getRecordTime(record) >= getRecordTime(existing)) {
-      merged.set(key, record);
+      merged.set(key, { ...existing, ...record });
     }
   });
 
@@ -349,17 +479,81 @@ async function getCloudRows() {
   return data || [];
 }
 
-async function replaceStoreRecords(storeName, records) {
+/**
+ * Non-destructive merge into IndexedDB store.
+ * Never clears the entire store; preserves local records and only applies
+ * remote updates when newer or inserts missing records.
+ */
+async function mergeStoreRecords(storeName, cloudRecords) {
   window.__budadiriApplyingRemote = true;
 
   try {
-    await clearStore(storeName);
+    const localRecords = await getAll(storeName);
+    const localByKey = new Map();
+    const localById = new Map();
 
-    for (const record of records) {
-      if (!isDeletedRecord(record)) {
-        await putRecord(storeName, record);
+    for (const loc of localRecords) {
+      if (loc.id !== undefined && loc.id !== null) {
+        localById.set(String(loc.id), loc);
+      }
+      const key = getRecordIdentityKey(storeName, loc);
+      if (key) {
+        const prev = localByKey.get(key);
+        localByKey.set(
+          key,
+          prev && storeName === "medicines"
+            ? mergeMedicineRecords(prev, loc)
+            : loc
+        );
       }
     }
+
+    const mergedCloud = mergeRecords(storeName, cloudRecords || []);
+    let activeCount = 0;
+
+    for (const remote of mergedCloud) {
+      const key = getRecordIdentityKey(storeName, remote);
+      const localMatch =
+        (key ? localByKey.get(key) : null) ||
+        (remote.id !== undefined && remote.id !== null ? localById.get(String(remote.id)) : null);
+
+      if (isDeletedRecord(remote)) {
+        if (localMatch && getRecordTime(remote) > getRecordTime(localMatch) && localMatch.id !== undefined) {
+          await deleteRecord(storeName, localMatch.id);
+          if (key) localByKey.delete(key);
+          if (localMatch.id !== undefined) localById.delete(String(localMatch.id));
+        }
+        continue;
+      }
+
+      activeCount += 1;
+
+      if (localMatch) {
+        if (storeName === "medicines") {
+          const mergedMed = mergeMedicineRecords(localMatch, remote);
+          await putRecord(storeName, mergedMed);
+          if (key) localByKey.set(key, mergedMed);
+          if (mergedMed.id !== undefined) localById.set(String(mergedMed.id), mergedMed);
+        } else if (getRecordTime(remote) >= getRecordTime(localMatch)) {
+          const updated = { ...localMatch, ...remote, id: localMatch.id };
+          await putRecord(storeName, updated);
+          if (key) localByKey.set(key, updated);
+          if (updated.id !== undefined) localById.set(String(updated.id), updated);
+        }
+      } else {
+        const copy = { ...remote };
+        delete copy.id;
+        if (storeName === "medicines" && Array.isArray(copy.batches) && copy.batches.length > 0 && typeof recalculateMedicineFromBatches === "function") {
+          recalculateMedicineFromBatches(copy);
+        }
+        const newId = await addRecord(storeName, copy);
+        const saved = { ...copy, id: newId };
+        if (key) localByKey.set(key, saved);
+        localById.set(String(newId), saved);
+      }
+    }
+
+    return activeCount;
   } finally {
     window.__budadiriApplyingRemote = false;
   }
@@ -395,9 +589,8 @@ function patchLocalWriteTracking() {
     return newId;
   };
 
-  // IMPORTANT: Do not overwrite an existing record timestamp on every local write.
-  // A stale device can otherwise make old stock look newer and overwrite a newer
-  // stock quantity during the next sync.
+  // Preserve existing updatedAt unless missing/invalid so stale devices do not
+  // artificially advance timestamps over newer changes from other devices.
   window.putRecord = async function patchedPutRecord(storeName, record) {
     if (
       !window.__budadiriApplyingRemote &&
@@ -547,7 +740,7 @@ async function freshDownloadFromCloud(options = {}) {
     await dbReady;
     patchLocalWriteTracking();
 
-    setSyncButtonState(true, "Downloading fresh data...");
+    setSyncButtonState(true, "Downloading and merging data...");
 
     const rows = await getCloudRows();
     const groupedRecords = {};
@@ -565,12 +758,7 @@ async function freshDownloadFromCloud(options = {}) {
     let downloadedCount = 0;
 
     for (const storeName of BUDADIRI_SYNC_STORES) {
-      const mergedRecords = mergeRecords(storeName, groupedRecords[storeName] || []);
-      const activeRecords = mergedRecords.filter(record => !isDeletedRecord(record));
-
-      downloadedCount += activeRecords.length;
-
-      await replaceStoreRecords(storeName, activeRecords);
+      downloadedCount += await mergeStoreRecords(storeName, groupedRecords[storeName] || []);
     }
 
     localStorage.setItem(BUDADIRI_LAST_SYNC_KEY, new Date().toISOString());
@@ -597,7 +785,14 @@ async function pullRecordsFromSupabase(options = {}) {
   return freshDownloadFromCloud(options);
 }
 
+/**
+ * Safe cleanup after sync: preserves device ID and last sync timestamp
+ * while clearing cookies/caches/session state if needed.
+ */
 async function clearLoginCookiesAndCacheAfterSync() {
+  const savedDeviceId = localStorage.getItem(BUDADIRI_DEVICE_ID_KEY);
+  const savedLastSync = localStorage.getItem(BUDADIRI_LAST_SYNC_KEY);
+
   document.cookie.split(";").forEach(cookie => {
     const name = cookie.split("=")[0].trim();
 
@@ -616,6 +811,9 @@ async function clearLoginCookiesAndCacheAfterSync() {
 
   localStorage.clear();
   sessionStorage.clear();
+
+  if (savedDeviceId) localStorage.setItem(BUDADIRI_DEVICE_ID_KEY, savedDeviceId);
+  if (savedLastSync) localStorage.setItem(BUDADIRI_LAST_SYNC_KEY, savedLastSync);
 }
 
 async function syncNow(options = {}) {
@@ -651,7 +849,7 @@ async function syncNow(options = {}) {
     setSyncButtonState(true, "Uploading to Supabase...");
     uploaded = await syncRecordsToSupabase({ silent });
 
-    setSyncButtonState(true, "Downloading fresh data...");
+    setSyncButtonState(true, "Downloading and merging data...");
     downloaded = await freshDownloadFromCloud({ silent: true });
 
     setSyncButtonState(true, "Clearing login/cache...");
@@ -677,6 +875,61 @@ async function syncNow(options = {}) {
   } finally {
     window.__budadiriSyncBusy = false;
   }
+}
+
+/**
+ * Restore missing/deduplicated medicines from a backup JSON object AFTER
+ * merge logic is in place.
+ */
+async function restoreMissingMedicinesFromBackup(backupPayload) {
+  await dbReady;
+  const meds = backupPayload?.data?.medicines || backupPayload?.medicines || [];
+  if (!Array.isArray(meds) || !meds.length) {
+    return { restored: 0, merged: 0 };
+  }
+
+  const existingMeds = await getAll("medicines");
+  const existingByKey = new Map();
+  for (const med of existingMeds) {
+    const key = getMedicineIdentityKey(med);
+    if (key) {
+      existingByKey.set(key, existingByKey.has(key) ? mergeMedicineRecords(existingByKey.get(key), med) : med);
+    }
+  }
+
+  let restored = 0;
+  let merged = 0;
+
+  window.__budadiriApplyingRemote = true;
+  try {
+    for (const bMed of meds) {
+      if (!bMed || !bMed.name || isDeletedRecord(bMed)) continue;
+      const key = getMedicineIdentityKey(bMed);
+      const current = key ? existingByKey.get(key) : null;
+
+      if (!current) {
+        const copy = { ...bMed };
+        delete copy.id;
+        copy.updatedAt = copy.updatedAt || new Date().toISOString();
+        const newId = await addRecord("medicines", copy);
+        existingByKey.set(key, { ...copy, id: newId });
+        restored += 1;
+      } else {
+        const combined = mergeMedicineRecords(current, bMed);
+        await putRecord("medicines", combined);
+        existingByKey.set(key, combined);
+        merged += 1;
+      }
+    }
+  } finally {
+    window.__budadiriApplyingRemote = false;
+  }
+
+  if (typeof refreshAll === "function") {
+    await refreshAll();
+  }
+
+  return { restored, merged };
 }
 
 function queueAutoSync() {
@@ -779,3 +1032,4 @@ window.scheduleAutoSync = scheduleAutoSync;
 window.syncNow = syncNow;
 window.startAutoSync = startAutoSync;
 window.deleteEverywhere = deleteEverywhere;
+window.restoreMissingMedicinesFromBackup = restoreMissingMedicinesFromBackup;
