@@ -961,9 +961,20 @@ async function renderInventory() {
             <td>${formatMoney(med.wholesalePrice)}</td>
 
             <td data-stock-cell="true">
-              <strong>${Number(med.quantity || 0)}</strong>
+              ${
+                canEdit
+                  ? `<input
+                       type="number"
+                       step="any"
+                       class="table-input stock-direct-input"
+                       data-id="${med.id}"
+                       value="${Number(med.quantity || 0)}"
+                       aria-label="Stock available for ${escapeHtml(med.name)}"
+                       style="width: 90px; font-weight: bold;"
+                     />`
+                  : `<strong>${Number(med.quantity || 0)}</strong>`
+              }
             </td>
-
             <td>
               ${
                 canEdit
@@ -1231,7 +1242,52 @@ async function adjustMedicineStock(id, delta) {
   await refreshAll();
   if (typeof queueAutoSync === "function") queueAutoSync();
 }
+async function setMedicineStock(id, newStockValue) {
+  if (!requireRole(["Administrator", "Director", "Dispenser"])) {
+    return showToast("Only Administrator, Director, or Dispenser can adjust stock.");
+  }
 
+  const targetQty = Number(newStockValue);
+  if (!Number.isFinite(targetQty)) {
+    showToast("Invalid stock quantity.");
+    await renderInventory();
+    return;
+  }
+
+  const med = await getById(STORE.medicines, Number(id));
+  if (!med) return showToast("Medicine not found.");
+
+  const currentQty = Number(med.quantity || 0);
+  const delta = targetQty - currentQty;
+
+  if (delta === 0) return;
+
+  const batches = Array.isArray(med.batches) ? [...med.batches] : getMedicineBatches(med);
+  const now = new Date().toISOString();
+
+  if (batches.length) {
+    const target = batches.at(-1);
+    target.quantity = Number(target.quantity || 0) + delta;
+    target.updatedAt = now;
+    med.batches = batches;
+    recalculateMedicineFromBatches(med);
+  } else {
+    med.quantity = targetQty;
+  }
+
+  med.updatedAt = now;
+  await putRecord(STORE.medicines, med);
+  await writeAudit("stock_updated_directly", {
+    medicineId: med.id,
+    name: med.name,
+    previousStock: currentQty,
+    newStock: Number(med.quantity || 0)
+  });
+
+  showToast(`${med.name}: stock updated to ${Number(med.quantity || 0)}`);
+  await refreshAll();
+  if (typeof queueAutoSync === "function") queueAutoSync();
+}
 async function deleteMedicine(id) {
   if (!requireRole(["Administrator", "Director"])) return showToast("Not allowed.");
   const med = await getById(STORE.medicines, id);
@@ -3212,6 +3268,20 @@ function bindEvents() {
   $("medicineForm").addEventListener("submit", saveMedicine);
   $("medicineSearch").addEventListener("input", renderInventory);
   $("medicineStatusFilter").addEventListener("change", renderInventory);
+  $("medicineTable")?.addEventListener("change", async event => {
+      const input = event.target.closest(".stock-direct-input");
+      if (!input) return;
+      await setMedicineStock(Number(input.dataset.id), input.value);
+    });
+  
+    $("medicineTable")?.addEventListener("keydown", event => {
+      const input = event.target.closest(".stock-direct-input");
+      if (!input) return;
+      if (event.key === "Enter") {
+        event.preventDefault();
+        input.blur();
+      }
+    });
 
   $("addSupplierBtn").addEventListener("click", () => openSupplierForm());
   $("supplierForm").addEventListener("submit", saveSupplier);
