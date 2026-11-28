@@ -395,8 +395,15 @@ function patchLocalWriteTracking() {
     return newId;
   };
 
+  // IMPORTANT: Do not overwrite an existing record timestamp on every local write.
+  // A stale device can otherwise make old stock look newer and overwrite a newer
+  // stock quantity during the next sync.
   window.putRecord = async function patchedPutRecord(storeName, record) {
-    if (!window.__budadiriApplyingRemote && !window.__budadiriSuppressWriteTracking) {
+    if (
+      !window.__budadiriApplyingRemote &&
+      !window.__budadiriSuppressWriteTracking &&
+      (!record.updatedAt || Number.isNaN(new Date(record.updatedAt).getTime()))
+    ) {
       record.updatedAt = new Date().toISOString();
     }
 
