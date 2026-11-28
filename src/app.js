@@ -225,7 +225,7 @@ function getMedicineBatches(med) {
 
 function recalculateMedicineFromBatches(med) {
   const batches = Array.isArray(med.batches) ? med.batches : [];
-  const totalQty = batches.reduce((sum, b) => sum + Math.max(0, Number(b.quantity || 0)), 0);
+  const totalQty = batches.reduce((sum, b) => sum + Number(b.quantity || 0), 0);
   med.quantity = totalQty;
 
   const activeBatch = batches.find(b => Number(b.quantity || 0) > 0) || batches.at(-1);
@@ -865,20 +865,28 @@ async function renderInventory() {
 
   const canEdit = requireRole(["Administrator", "Director", "Dispenser"]);
 
-  $("medicineTable").innerHTML = filtered.length ? filtered.map(med => {
-    const activeBatches = getMedicineBatches(med).filter(b => Number(b.quantity || 0) > 0);
-    const batchHint = activeBatches.length
-      ? `<br><span class="muted">${activeBatches.length} batch(es) | Total Qty: ${Number(med.quantity || 0)}</span>`
-      : `<br><span class="muted">Qty: ${Number(med.quantity || 0)}</span>`;
+  $("medicineTable").innerHTML = filtered.length ? filtered.map((med, index) => {
+    const activeBatches = getMedicineBatches(med).filter(b => Number(b.quantity || 0) !== 0);
+    const dateAdded = med.createdAt
+      ? new Date(med.createdAt).toLocaleDateString()
+      : "Not recorded";
 
     return `
       <tr>
-        <td><strong>${escapeHtml(med.name)}</strong><br><span class="muted">${escapeHtml(med.genericName || "")}</span></td>
+        <td>${index + 1}</td>
+        <td>
+          <strong>${escapeHtml(med.name)}</strong>
+          <br><span class="muted">${escapeHtml(med.genericName || "")}</span>
+          ${activeBatches.length
+            ? `<br><span class="muted">${activeBatches.length} batch(es)</span>`
+            : ""}
+        </td>
+        <td>${escapeHtml(dateAdded)}</td>
         <td>${escapeHtml(med.category || "")}</td>
-        <td class="stock-available-cell"><strong>${Number(med.quantity || 0)}</strong>${activeBatches.length ? `<br><span class="muted">${activeBatches.length} batch(es)</span>` : ""}</td>
         <td>${formatMoney(med.buyingPrice)}</td>
         <td>${formatMoney(med.sellingPrice)}</td>
         <td>${formatMoney(med.wholesalePrice)}</td>
+        <td data-stock-cell="true"><strong>${Number(med.quantity || 0)}</strong></td>
         <td>
           ${canEdit ? `<button class="table-btn stock-plus" data-action="increase-stock" data-id="${med.id}" title="Increase stock by 1">+</button>` : ""}
           ${canEdit ? `<button class="table-btn danger stock-minus" data-action="decrease-stock" data-id="${med.id}" title="Decrease stock by 1">−</button>` : ""}
@@ -887,7 +895,7 @@ async function renderInventory() {
         </td>
       </tr>
     `;
-  }).join("") : `<tr><td colspan="6">No medicines found.</td></tr>`;
+  }).join("") : `<tr><td colspan="9">No medicines found.</td></tr>`;
 }
 
 async function populateSupplierOptions() {
