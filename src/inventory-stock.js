@@ -2,7 +2,7 @@
   const inventoryTableBody = () => document.getElementById("medicineTable");
 
   function canAdjustInventoryStock() {
-    return typeof requireRole === "function" && requireRole(["Administrator", "Director"]);
+    return typeof requireRole === "function" && requireRole(["Administrator", "Director", "Dispenser"]);
   }
 
   function addStockColumn() {
@@ -45,7 +45,7 @@
 
   async function saveStockQuantity(button) {
     if (!canAdjustInventoryStock()) {
-      showToast("Only Administrator or Director can adjust stock.");
+      showToast("Only Administrator, Director, or Dispenser can adjust stock.");
       return;
     }
 
