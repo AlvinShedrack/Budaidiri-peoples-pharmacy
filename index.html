@@ -15,10 +15,6 @@
 .stock-adjustment-help{margin-top:8px;font-size:.9rem}
 .stock-plus,.stock-minus{font-weight:800;min-width:34px}
 </style>
-
-<style>
-.stock-available-cell{font-weight:700;white-space:nowrap}
-</style>
 </head>
 <body>
   <div id="toast" class="toast"></div>
@@ -190,7 +186,7 @@
           <div class="panel-header split">
             <div>
               <h2>Medicine Inventory</h2>
-              <p>Manage medicines and adjust stock. Use + to add stock and − to reduce stock. Negative stock is allowed.</p>
+              <p>Manage medicines and adjust stock. The inventory shows S/N, date added, and current stock available. Use + to add stock and − to reduce stock. Negative stock is allowed.</p>
             </div>
             <button id="addMedicineBtn" class="primary-btn">Add Medicine</button>
           </div>
@@ -207,7 +203,7 @@
             <table>
               <thead>
                 <tr>
-                  <th>Medicine</th><th>Category</th><th>Stock Available</th><th>Buy</th><th>Sell</th><th>Wholesale</th><th>Actions (+ / −)</th>
+                  <th>S/N</th><th>Medicine</th><th>Date Added</th><th>Category</th><th>Buy</th><th>Sell</th><th>Wholesale</th><th data-stock-header="true">Stock Available</th><th>Actions (+ / −)</th>
                 </tr>
               </thead>
               <tbody id="medicineTable"></tbody>
