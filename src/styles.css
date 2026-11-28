@@ -6868,3 +6868,14 @@ body.modal-open {
   flex: 1.2;
   min-width: 170px;
 }
+#inventory .table-wrap {
+  overflow: visible;
+}
+
+#inventory table thead th {
+  position: sticky;
+  top: 0;
+  z-index: 20;
+  background: #ffffff;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.08);
+}
