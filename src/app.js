@@ -868,7 +868,10 @@ async function renderInventory() {
   $("medicineTable").innerHTML = filtered.length ? filtered.map((med, index) => {
     const activeBatches = getMedicineBatches(med).filter(b => Number(b.quantity || 0) !== 0);
     const dateAdded = med.createdAt
-      ? new Date(med.createdAt).toLocaleDateString()
+      ? (() => {
+          const d = new Date(med.createdAt);
+          return `${String(d.getDate()).padStart(2, "0")}/${String(d.getMonth() + 1).padStart(2, "0")}/${d.getFullYear()}`;
+        })()
       : "Not recorded";
 
     return `
